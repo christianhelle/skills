@@ -1,6 +1,6 @@
 # Skills
 
-Agent skills for [opencode](https://opencode.ai) and other AI-agent tooling.
+Agent skills AI coding agent tooling.
 
 Skills are directories containing a `SKILL.md` file that instructs an agent on domain knowledge, patterns, conventions, or workflows.
 
