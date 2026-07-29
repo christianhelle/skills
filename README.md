@@ -16,55 +16,67 @@ Skills are directories containing a `SKILL.md` file that instructs an agent on d
 
 ### Prerequisites
 
-- **PowerShell 7+** (cross-platform: Windows, macOS, Linux)
+- **Linux/macOS:** `curl` and `unzip`
+- **Windows:** PowerShell 5.1+
 - Internet access to `github.com`
 
-### Quick install (all skills)
+### One-liner
 
-```powershell
-irm https://raw.githubusercontent.com/christianhelle/skills/main/install-skills.ps1 | iex
+**Linux/macOS:**
+```bash
+curl -fsSL https://christianhelle.com/skills/install | bash
 ```
 
-### Selective install
-
+**Windows (PowerShell):**
 ```powershell
-# Install specific skills only
-irm https://raw.githubusercontent.com/christianhelle/skills/main/install-skills.ps1 | iex powershell -c "& { install-skills nano-commits }"
+irm https://christianhelle.com/skills/install.ps1 | iex
 ```
 
 ### From a local clone
 
+**Bash:**
+```bash
+./install.sh
+```
+
+**PowerShell:**
 ```powershell
-.\install-skills.ps1
+.\install.ps1
 ```
 
 ### Options
 
-```powershell
-.\install-skills.ps1 [-Skill <string[]>] [-Tag <string>] [-Force] [-WhatIf]
+**Bash:**
+```bash
+./install.sh [--skill <name>] [--tag <ref>] [--force] [--whatif]
 ```
 
-| Param | Default | Description |
-|-------|---------|-------------|
-| `-Skill` | all skills | One or more skill names to install |
-| `-Tag` | `main` | Git tag or branch to install from (auto-detected) |
-| `-Force` | off | Overwrite existing skills without prompting |
-| `-WhatIf` | off | Dry run — show what would be installed |
+**PowerShell:**
+```powershell
+.\install.ps1 [-Skill <string[]>] [-Tag <string>] [-Force] [-WhatIf]
+```
+
+| Param / Flag | Default | Description |
+|--------------|---------|-------------|
+| `-Skill` / `--skill` | all skills | One or more skill names to install (repeatable in bash) |
+| `-Tag` / `--tag` | `main` | Git tag or branch to install from (auto-detected) |
+| `-Force` / `--force` | off | Overwrite existing skills without prompting |
+| `-WhatIf` / `--whatif` | off | Dry run — show what would be installed |
 
 ### Examples
 
-```powershell
+```bash
 # Install everything from the main branch
-.\install-skills.ps1
+./install.sh
 
 # Install only nano-commits
-.\install-skills.ps1 -Skill nano-commits
+./install.sh --skill nano-commits
 
 # Pin to a specific tag, overwrite without confirmation
-.\install-skills.ps1 -Tag v1.0.0 -Force
+./install.sh --tag v1.0.0 --force
 
 # Preview what would be installed
-.\install-skills.ps1 -WhatIf
+./install.sh --whatif
 ```
 
 ### How it works
