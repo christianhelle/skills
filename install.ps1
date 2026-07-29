@@ -1,3 +1,36 @@
+#Requires -Version 5.1
+
+<#
+.SYNOPSIS
+    Install agent skills from christianhelle/skills
+
+.DESCRIPTION
+    Downloads skills from the christianhelle/skills repository and installs them
+    to ~/.agents/skills/. Skills are directories containing a SKILL.md file.
+
+.PARAMETER Skill
+    One or more skill names to install. Defaults to all skills.
+
+.PARAMETER Tag
+    Git tag or branch to install from. Defaults to "main". Auto-detects
+    whether the value is a tag or branch.
+
+.PARAMETER Force
+    Overwrite existing skills without prompting.
+
+.PARAMETER WhatIf
+    Show what would be installed without making changes.
+
+.EXAMPLE
+    irm https://christianhelle.com/skills/install.ps1 | iex
+
+.EXAMPLE
+    .\install.ps1 -Skill nano-commits
+
+.EXAMPLE
+    .\install.ps1 -Tag v1.0.0 -Force
+#>
+
 param(
     [string[]] $Skill = @(),
     [string] $Tag = "main",
