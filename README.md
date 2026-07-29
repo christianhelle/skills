@@ -8,9 +8,8 @@ Skills are directories containing a `SKILL.md` file that instructs an agent on d
 
 | Skill | Description |
 |-------|-------------|
+| [azdocli](./azdocli) | Interact with Azure DevOps — repos, PRs, pipelines, boards, projects |
 | [nano-commits](./nano-commits) | Autonomous nano-commit workflow — slice work into the smallest independently-testable logical groups |
-
-*More coming.*
 
 ## Installation
 
