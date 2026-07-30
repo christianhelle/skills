@@ -9,6 +9,21 @@ CLI tool for Azure DevOps: <https://github.com/christianhelle/azdocli>
 
 ## Quick start
 
+### Installation
+
+If `azdocli` is not installed, use the platform-appropriate one-liner:
+
+| Platform | Command |
+|----------|---------|
+| Linux/macOS | `curl -fsSL https://christianhelle.com/azdocli/install \| bash` |
+| Windows (PowerShell) | `iwr -useb https://christianhelle.com/azdocli/install.ps1 \| iex` |
+| Cargo (any) | `cargo install azdocli` |
+| Linux (Snap) | `snap install azdocli` |
+
+Verify installation with `azdocli --version`.
+
+### Login & config
+
 ```bash
 # Login (interactive — prompts for org + PAT)
 azdocli login
