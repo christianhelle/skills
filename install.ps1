@@ -41,29 +41,40 @@ param(
 $Repo = "christianhelle/skills"
 $DestRoot = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".agents" "skills"
 
-# ---- resolve archive URL (tag first, fall back to branch) ----
-$TagUrl = "https://github.com/$Repo/archive/refs/tags/$Tag.zip"
-$BranchUrl = "https://github.com/$Repo/archive/refs/heads/$Tag.zip"
-
-Write-Host "Resolving '$Tag' ..." -ForegroundColor DarkGray
-try {
-    $null = Invoke-WebRequest -Uri $TagUrl -Method Head -SkipCertificateCheck -ErrorAction Stop
-    $ArchiveUrl = $TagUrl
-    Write-Host "Found tag: $Tag" -ForegroundColor Green
-} catch {
-    $ArchiveUrl = $BranchUrl
-    Write-Host "Using branch: $Tag" -ForegroundColor Green
-}
-
 # ---- temp workspace ----
 $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) "skills-install-$([System.Guid]::NewGuid().ToString("N"))"
 New-Item -ItemType Directory -Path $TempDir -Force | Out-Null
 $ZipPath = Join-Path $TempDir "archive.zip"
 
 try {
+    # ---- download (authenticated via gh for private repos) ----
+    Write-Host "Resolving '$Tag' ..." -ForegroundColor DarkGray
+
+    $Headers = @{}
+    $UseGh = Get-Command gh -ErrorAction SilentlyContinue
+    if ($UseGh) {
+        $Token = gh auth token 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            $Headers["Authorization"] = "Bearer $Token"
+            Write-Host "  (authenticated via gh)" -ForegroundColor DarkGray
+        }
+    }
+
+    # resolve archive URL (tag first, fall back to branch)
+    $TagUrl = "https://github.com/$Repo/archive/refs/tags/$Tag.zip"
+    $BranchUrl = "https://github.com/$Repo/archive/refs/heads/$Tag.zip"
+    try {
+        $null = Invoke-WebRequest -Uri $TagUrl -Method Head -Headers $Headers -SkipCertificateCheck -ErrorAction Stop
+        $ArchiveUrl = $TagUrl
+        Write-Host "Found tag: $Tag" -ForegroundColor Green
+    } catch {
+        $ArchiveUrl = $BranchUrl
+        Write-Host "Using branch: $Tag" -ForegroundColor Green
+    }
+
     # ---- download ----
     Write-Host "Downloading archive ..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $ArchiveUrl -OutFile $ZipPath -SkipCertificateCheck
+    Invoke-WebRequest -Uri $ArchiveUrl -OutFile $ZipPath -Headers $Headers -SkipCertificateCheck
 
     # ---- extract ----
     Expand-Archive -Path $ZipPath -DestinationPath $TempDir
