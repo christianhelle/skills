@@ -12,6 +12,11 @@ description: >
 Do all work in a fresh git worktree when the user requests it. The main checkout
 stays untouched; operate entirely inside the worktree.
 
+## Triggers
+
+- **Enable**: user says `git worktree`, `git work tree`, `in a worktree`, or `/worktree-isolation`
+- Mode stays active until explicitly disabled or session ends
+
 ## Workflow
 
 1. **Verify repo** — confirm the working directory is a git repo:
