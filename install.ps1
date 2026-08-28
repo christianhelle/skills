@@ -261,16 +261,20 @@ try {
         }
 
         if ($Existing.Count -gt 0) {
-            if ($Existing.Count -eq 1) {
-                Write-Host "  '$($Existing[0])' already exists. Overwrite? [y/N] " -NoNewline -ForegroundColor White
-            } else {
-                Write-Host "  $($Existing.Count) skill(s) already exist: $($Existing -join ', ')" -ForegroundColor White
-                Write-Host "  Overwrite all? [y/N] " -NoNewline -ForegroundColor White
+            $overwriteAnswer = 'n'
+            if ($PSCommandPath -and [Environment]::UserInteractive) {
+                if ($Existing.Count -eq 1) {
+                    Write-Host "  '$($Existing[0])' already exists. Overwrite? [y/N] " -NoNewline -ForegroundColor White
+                } else {
+                    Write-Host "  $($Existing.Count) skill(s) already exist: $($Existing -join ', ')" -ForegroundColor White
+                    Write-Host "  Overwrite all? [y/N] " -NoNewline -ForegroundColor White
+                }
+                $overwriteAnswer = Read-Host
             }
-            $overwriteAnswer = Read-Host
 
             if ($overwriteAnswer -ne 'y' -and $overwriteAnswer -ne 'Y') {
-                Write-Host "  Skipping existing skills." -ForegroundColor Yellow
+                $Skipped += $Existing.Count
+                Write-Host "  Skipping $($Existing.Count) existing skill(s)." -ForegroundColor Yellow
                 $AllSkills = $AllSkills | Where-Object { $_.Name -notin $Existing }
                 if ($AllSkills.Count -eq 0) {
                     Write-Host "  Nothing new to install." -ForegroundColor Yellow
