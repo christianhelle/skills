@@ -7,6 +7,7 @@
 .DESCRIPTION
     Downloads skills from the christianhelle/skills repository and installs them
     to ~/.agents/skills/. Skills are directories containing a SKILL.md file.
+    When run interactively, prompts you to choose which skills to install.
 
 .PARAMETER Skill
     One or more skill names to install. Defaults to all skills.
@@ -40,6 +41,56 @@ param(
 
 $Repo = "christianhelle/skills"
 $DestRoot = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".agents" "skills"
+
+function Get-SkillDescription {
+    param([string]$SkillMdPath)
+    if (-not (Test-Path $SkillMdPath)) { return "" }
+
+    $content = Get-Content $SkillMdPath -Raw
+    $inFrontmatter = $false
+    $capturing = $false
+    $folded = ""
+
+    foreach ($line in $content -split "`n") {
+        if ($line -match '^---$') {
+            if ($inFrontmatter) { break }
+            $inFrontmatter = $true
+            continue
+        }
+        if (-not $inFrontmatter) { continue }
+
+        if ($line -match '^description:\s*(.*)') {
+            $value = $Matches[1].Trim()
+            if ($value -match '^>\s*(.*)') {
+                # Folded scalar — capture subsequent indented lines
+                $folded = $Matches[1].Trim()
+                $capturing = $true
+                continue
+            }
+            # Single-line: return first sentence
+            $periodIdx = $value.IndexOf('.')
+            if ($periodIdx -gt 0) { return $value.Substring(0, $periodIdx + 1) }
+            return $value
+        }
+
+        if ($capturing) {
+            if ($line -match '^\s+(.*)') {
+                $folded += " " + $Matches[1].Trim()
+            } else {
+                $periodIdx = $folded.IndexOf('.')
+                if ($periodIdx -gt 0) { return $folded.Substring(0, $periodIdx + 1) }
+                return $folded
+            }
+        }
+    }
+
+    if ($capturing -and $folded) {
+        $periodIdx = $folded.IndexOf('.')
+        if ($periodIdx -gt 0) { return $folded.Substring(0, $periodIdx + 1) }
+        return $folded
+    }
+    return ""
+}
 
 # ---- temp workspace ----
 $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) "skills-install-$([System.Guid]::NewGuid().ToString("N"))"
@@ -97,12 +148,80 @@ try {
         exit 0
     }
 
-    # ---- filter and install ----
-    $Installed = 0
-    $Skipped = 0
-    $Errors = 0
+    # ---- interactive selection ----
+    # Show interactive prompt when:
+    #   - No -Skill flags were given
+    #   - Not in -WhatIf mode
+    #   - Running in an interactive session (not piped)
+    if ($Skill.Count -eq 0 -and -not $WhatIf -and [Environment]::UserInteractive) {
+        Write-Host ""
+        Write-Host "  Available skills:" -ForegroundColor White
+        Write-Host ""
 
-    # Warn about unrecognised skill names
+        $skillDescriptions = @{}
+        for ($i = 0; $i -lt $AllSkills.Count; $i++) {
+            $s = $AllSkills[$i]
+            $md = Join-Path $s.FullName "SKILL.md"
+            $desc = Get-SkillDescription -SkillMdPath $md
+            $skillDescriptions[$s.Name] = $desc
+            $num = $i + 1
+            $padded = "{0,2}" -f $num
+            if ($desc) {
+                Write-Host "    $padded) " -NoNewline -ForegroundColor Yellow
+                Write-Host ("{0,-24}" -f $s.Name) -NoNewline -ForegroundColor Cyan
+                Write-Host $desc -ForegroundColor DarkGray
+            } else {
+                Write-Host "    $padded) " -NoNewline -ForegroundColor Yellow
+                Write-Host $s.Name -ForegroundColor Cyan
+            }
+        }
+
+        Write-Host ""
+        Write-Host "  Press Enter to install all, type skill numbers (e.g. 1,2)," -ForegroundColor DarkGray
+        Write-Host "  'all' to install everything, or 'none' to skip:" -ForegroundColor DarkGray
+        Write-Host "  > " -NoNewline -ForegroundColor White
+        $userInput = Read-Host
+
+        if ($userInput) {
+            $normalized = $userInput.Trim().ToLower()
+
+            if ($normalized -eq 'none' -or $normalized -eq 'n') {
+                Write-Host "  No skills selected. Skipping installation." -ForegroundColor Yellow
+                exit 0
+            }
+
+            if ($normalized -eq 'all' -or $normalized -eq 'a' -or $normalized -eq '') {
+                # Keep all — no filter
+            } else {
+                $selected = @()
+                $parts = $normalized -split ',' | ForEach-Object { $_.Trim() }
+                foreach ($part in $parts) {
+                    if ($part -match '^\d+$') {
+                        $idx = [int]$part - 1
+                        if ($idx -ge 0 -and $idx -lt $AllSkills.Count) {
+                            $selected += $AllSkills[$idx]
+                        } else {
+                            Write-Host "  Warning: '$part' is not a valid skill number, skipping." -ForegroundColor DarkYellow
+                        }
+                    } else {
+                        Write-Host "  Warning: '$part' is not a valid number, skipping." -ForegroundColor DarkYellow
+                    }
+                }
+
+                if ($selected.Count -eq 0) {
+                    Write-Host "  No valid skills selected. Skipping installation." -ForegroundColor Yellow
+                    exit 0
+                }
+
+                $AllSkills = $selected
+                Write-Host ""
+                Write-Host "  Installing $($AllSkills.Count) selected skill(s)..." -ForegroundColor Cyan
+            }
+        }
+        Write-Host ""
+    }
+
+    # ---- filter by -Skill flag ----
     if ($Skill.Count -gt 0) {
         $ValidNames = $AllSkills | ForEach-Object { $_.Name }
         $Unknown = $Skill | Where-Object { $_ -notin $ValidNames }
@@ -120,6 +239,11 @@ try {
     if (-not (Test-Path $DestRoot)) {
         New-Item -ItemType Directory -Path $DestRoot -Force | Out-Null
     }
+
+    # ---- install ----
+    $Installed = 0
+    $Skipped = 0
+    $Errors = 0
 
     foreach ($Dir in $AllSkills) {
         $SkillName = $Dir.Name
