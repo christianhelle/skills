@@ -72,18 +72,126 @@ fi
 
 # ---- discover skills (dirs with SKILL.md) ----
 declare -a ALL_SKILLS=()
+declare -A SKILL_DESCRIPTIONS=()
 while IFS= read -r dir; do
   name=$(basename "$dir")
   ALL_SKILLS+=("$name")
+  # Extract description from SKILL.md frontmatter
+  skill_md="${dir}/SKILL.md"
+  if [ -f "$skill_md" ]; then
+    desc=$(awk '
+      /^---$/ { fence++; next }
+      fence == 1 && /^description:/ {
+        sub(/^description:[[:space:]]*/, "")
+        # Handle folded scalar (starts with >)
+        if ($0 ~ /^>/) {
+          sub(/^>[[:space:]]*/, "")
+          folded = $0
+          capturing = 1
+          next
+        }
+        # Single-line description: grab first sentence
+        sub(/\..*/, ".")
+        print
+        exit
+      }
+      fence == 1 && capturing && /^[[:space:]]/ {
+        sub(/^[[:space:]]+/, "")
+        folded = folded " " $0
+        next
+      }
+      fence == 1 && capturing {
+        # End of folded scalar — print first sentence
+        gsub(/\n/, " ", folded)
+        sub(/\..*/, ".", folded)
+        print folded
+        exit
+      }
+    ' "$skill_md")
+    if [ -n "$desc" ]; then
+      SKILL_DESCRIPTIONS["$name"]="$desc"
+    fi
+  fi
 done < <(find "$EXTRACTED" -maxdepth 1 -type d | tail -n +2 | while read -r d; do
   if [ -f "$d/SKILL.md" ]; then
-    basename "$d"
+    echo "$d"
   fi
 done)
 
 if [ "${#ALL_SKILLS[@]}" -eq 0 ]; then
   echo "No skills found in archive." >&2
   exit 0
+fi
+
+# ---- interactive selection ----
+# Show interactive prompt when:
+#   - No --skill flags were given
+#   - Not in --whatif mode
+#   - Running in an interactive terminal
+if [ "${#SKILLS[@]}" -eq 0 ] && [ "$WHATIF" = false ] && [ -t 0 ]; then
+  echo "" >&2
+  echo "  Available skills:" >&2
+  echo "" >&2
+
+  # Print numbered list
+  for i in "${!ALL_SKILLS[@]}"; do
+    local_idx=$((i + 1))
+    local_name="${ALL_SKILLS[$i]}"
+    local_desc="${SKILL_DESCRIPTIONS[$local_name]:-}"
+    if [ -n "$local_desc" ]; then
+      printf "    %2d) %-24s %s\n" "$local_idx" "$local_name" "$local_desc" >&2
+    else
+      printf "    %2d) %s\n" "$local_idx" "$local_name" >&2
+    fi
+  done
+
+  echo "" >&2
+  echo "  Press Enter to install all, type skill numbers (e.g. 1,2)," >&2
+  echo "  'all' to install everything, or 'none' to skip:" >&2
+  printf "  > " >&2
+
+  read -r USER_INPUT </dev/tty
+
+  if [ -n "$USER_INPUT" ]; then
+    # Normalize input
+    INPUT_LOWER=$(echo "$USER_INPUT" | tr '[:upper:]' '[:lower:]' | xargs)
+
+    if [ "$INPUT_LOWER" = "none" ] || [ "$INPUT_LOWER" = "n" ]; then
+      echo "  No skills selected. Skipping installation." >&2
+      exit 0
+    fi
+
+    if [ "$INPUT_LOWER" = "all" ] || [ "$INPUT_LOWER" = "a" ] || [ "$INPUT_LOWER" = "" ]; then
+      : # Keep all skills — no filter
+    else
+      # Parse comma-separated numbers
+      SELECTED=()
+      IFS=',' read -ra PARTS <<< "$USER_INPUT"
+      for part in "${PARTS[@]}"; do
+        part=$(echo "$part" | xargs) # trim whitespace
+        if [[ "$part" =~ ^[0-9]+$ ]]; then
+          idx=$((part - 1))
+          if [ "$idx" -ge 0 ] && [ "$idx" -lt "${#ALL_SKILLS[@]}" ]; then
+            SELECTED+=("${ALL_SKILLS[$idx]}")
+          else
+            echo "  Warning: '$part' is not a valid skill number, skipping." >&2
+          fi
+        else
+          echo "  Warning: '$part' is not a valid number, skipping." >&2
+        fi
+      done
+
+      if [ "${#SELECTED[@]}" -eq 0 ]; then
+        echo "  No valid skills selected. Skipping installation." >&2
+        exit 0
+      fi
+
+      ALL_SKILLS=("${SELECTED[@]}")
+      echo "" >&2
+      echo "  Installing ${#ALL_SKILLS[@]} selected skill(s)..." >&2
+    fi
+  fi
+  echo "" >&2
 fi
 
 # ---- filter ----
@@ -133,7 +241,7 @@ for name in "${ALL_SKILLS[@]}"; do
   fi
 
   if [ -d "$dst" ] && ! $FORCE; then
-    read -r -p "  '${name}' already exists. Overwrite? [y/N] " answer
+    read -r -p "  '${name}' already exists. Overwrite? [y/N] " answer </dev/tty
     if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
       echo "  Skipped ${name}" >&2
       SKIPPED=$((SKIPPED + 1))
