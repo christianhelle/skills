@@ -71,8 +71,9 @@ if [ -z "$EXTRACTED" ]; then
 fi
 
 # ---- discover skills (dirs with SKILL.md) ----
+# Uses parallel indexed arrays (no Bash 4+ associative arrays needed)
 declare -a ALL_SKILLS=()
-declare -A SKILL_DESCRIPTIONS=()
+declare -a SKILL_DESCS=()
 while IFS= read -r dir; do
   name=$(basename "$dir")
   ALL_SKILLS+=("$name")
@@ -116,9 +117,9 @@ while IFS= read -r dir; do
         exit
       }
     ' "$skill_md")
-    if [ -n "$desc" ]; then
-      SKILL_DESCRIPTIONS["$name"]="$desc"
-    fi
+    SKILL_DESCS+=("$desc")
+  else
+    SKILL_DESCS+=("")
   fi
 done < <(find "$EXTRACTED" -maxdepth 1 -type d | tail -n +2 | while read -r d; do
   if [ -f "$d/SKILL.md" ]; then
@@ -145,7 +146,7 @@ if [ "${#SKILLS[@]}" -eq 0 ] && [ "$WHATIF" = false ] && [ -t 0 ]; then
   for i in "${!ALL_SKILLS[@]}"; do
     local_idx=$((i + 1))
     local_name="${ALL_SKILLS[$i]}"
-    local_desc="${SKILL_DESCRIPTIONS[$local_name]:-}"
+    local_desc="${SKILL_DESCS[$i]:-}"
     if [ -n "$local_desc" ]; then
       printf "    %2d) %-24s %s\n" "$local_idx" "$local_name" "$local_desc" >&2
     else
@@ -174,6 +175,7 @@ if [ "${#SKILLS[@]}" -eq 0 ] && [ "$WHATIF" = false ] && [ -t 0 ]; then
     else
       # Parse comma-separated numbers
       SELECTED=()
+      SELECTED_DESCS=()
       IFS=',' read -ra PARTS <<< "$USER_INPUT"
       for part in "${PARTS[@]}"; do
         part=$(echo "$part" | xargs) # trim whitespace
@@ -181,6 +183,7 @@ if [ "${#SKILLS[@]}" -eq 0 ] && [ "$WHATIF" = false ] && [ -t 0 ]; then
           idx=$((part - 1))
           if [ "$idx" -ge 0 ] && [ "$idx" -lt "${#ALL_SKILLS[@]}" ]; then
             SELECTED+=("${ALL_SKILLS[$idx]}")
+            SELECTED_DESCS+=("${SKILL_DESCS[$idx]:-}")
           else
             echo "  Warning: '$part' is not a valid skill number, skipping." >&2
           fi
@@ -195,6 +198,7 @@ if [ "${#SKILLS[@]}" -eq 0 ] && [ "$WHATIF" = false ] && [ -t 0 ]; then
       fi
 
       ALL_SKILLS=("${SELECTED[@]}")
+      SKILL_DESCS=("${SELECTED_DESCS[@]}")
       echo "" >&2
       echo "  Installing ${#ALL_SKILLS[@]} selected skill(s)..." >&2
     fi
@@ -206,13 +210,16 @@ fi
 if [ "${#SKILLS[@]}" -gt 0 ]; then
   UNKNOWN=()
   FILTERED=()
-  for s in "${SKILLS[@]}"; do
+  FILTERED_DESCS=()
+  for i in "${!ALL_SKILLS[@]}"; do
+    s="${ALL_SKILLS[$i]}"
     found=false
-    for valid in "${ALL_SKILLS[@]}"; do
+    for valid in "${SKILLS[@]}"; do
       if [ "$s" = "$valid" ]; then found=true; break; fi
     done
     if $found; then
       FILTERED+=("$s")
+      FILTERED_DESCS+=("${SKILL_DESCS[$i]:-}")
     else
       UNKNOWN+=("$s")
     fi
@@ -221,6 +228,7 @@ if [ "${#SKILLS[@]}" -gt 0 ]; then
     echo "Unknown skill name(s): ${UNKNOWN[*]}" >&2
   fi
   ALL_SKILLS=("${FILTERED[@]}")
+  SKILL_DESCS=("${FILTERED_DESCS[@]}")
   if [ "${#ALL_SKILLS[@]}" -eq 0 ]; then
     echo "No matching skills to install." >&2
     exit 0
@@ -244,27 +252,33 @@ if ! $WHATIF && ! $FORCE; then
   done
 
   if [ "${#EXISTING[@]}" -gt 0 ]; then
-    if [ "${#EXISTING[@]}" -eq 1 ]; then
-      printf "  '%s' already exists. Overwrite? [y/N] " "${EXISTING[0]}" >&2
-    else
-      printf "  %d skill(s) already exist: %s\n" "${#EXISTING[@]}" "${EXISTING[*]}" >&2
-      printf "  Overwrite all? [y/N] " >&2
+    OVERWRITE_ANSWER=""
+    if [ -r /dev/tty ]; then
+      if [ "${#EXISTING[@]}" -eq 1 ]; then
+        printf "  '%s' already exists. Overwrite? [y/N] " "${EXISTING[0]}" >&2
+      else
+        printf "  %d skill(s) already exist: %s\n" "${#EXISTING[@]}" "${EXISTING[*]}" >&2
+        printf "  Overwrite all? [y/N] " >&2
+      fi
+      read -r OVERWRITE_ANSWER </dev/tty
     fi
-    read -r OVERWRITE_ANSWER </dev/tty
     if [ "$OVERWRITE_ANSWER" != "y" ] && [ "$OVERWRITE_ANSWER" != "Y" ]; then
       echo "  Skipping existing skills." >&2
       # Remove existing skills from install list
       FILTERED=()
-      for name in "${ALL_SKILLS[@]}"; do
+      FILTERED_DESCS=()
+      for i in "${!ALL_SKILLS[@]}"; do
         skip=false
         for existing in "${EXISTING[@]}"; do
-          if [ "$name" = "$existing" ]; then skip=true; break; fi
+          if [ "${ALL_SKILLS[$i]}" = "$existing" ]; then skip=true; break; fi
         done
         if ! $skip; then
-          FILTERED+=("$name")
+          FILTERED+=("${ALL_SKILLS[$i]}")
+          FILTERED_DESCS+=("${SKILL_DESCS[$i]:-}")
         fi
       done
       ALL_SKILLS=("${FILTERED[@]}")
+      SKILL_DESCS=("${FILTERED_DESCS[@]}")
       if [ "${#ALL_SKILLS[@]}" -eq 0 ]; then
         echo "  Nothing new to install." >&2
         exit 0
