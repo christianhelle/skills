@@ -157,18 +157,18 @@ try {
     # Show interactive prompt when:
     #   - No -Skill flags were given
     #   - Not in -WhatIf mode
-    #   - Running in an interactive session (not piped)
-    if ($Skill.Count -eq 0 -and -not $WhatIf -and [Environment]::UserInteractive) {
+    #   - Not in -Force mode
+    #   - Running from a file (not piped via iex)
+    #   - Running in an interactive session
+    if ($Skill.Count -eq 0 -and -not $WhatIf -and -not $Force -and $PSCommandPath -and [Environment]::UserInteractive) {
         Write-Host ""
         Write-Host "  Available skills:" -ForegroundColor White
         Write-Host ""
 
-        $skillDescriptions = @{}
         for ($i = 0; $i -lt $AllSkills.Count; $i++) {
             $s = $AllSkills[$i]
             $md = Join-Path $s.FullName "SKILL.md"
             $desc = Get-SkillDescription -SkillMdPath $md
-            $skillDescriptions[$s.Name] = $desc
             $num = $i + 1
             $padded = "{0,2}" -f $num
             if ($desc) {
