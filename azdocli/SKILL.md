@@ -1,6 +1,6 @@
 ---
 name: azdocli
-description: Interact with Azure DevOps via the azdocli CLI tool (repos, PRs, pipelines, boards, projects). Use when working with Azure DevOps, creating pull requests, managing repos, running pipelines, or querying boards.  Use when user says "create a pull request".
+description: Interact with Azure DevOps via the azdocli CLI tool (repos, PRs, pipelines, boards, projects). Use when working with Azure DevOps, creating pull requests, managing repos, running pipelines, or querying boards. Use when user says "create a pull request".
 ---
 
 # azdocli
