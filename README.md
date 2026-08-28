@@ -32,7 +32,11 @@ curl -fsSL https://christianhelle.com/skills/install | bash
 irm https://christianhelle.com/skills/install.ps1 | iex
 ```
 
+> When run via a one-liner, all skills are installed automatically (no interactive prompt).
+
 ### From a local clone
+
+When run from a local clone, the installer prompts you to choose which skills to install:
 
 **Bash:**
 ```bash
@@ -43,6 +47,25 @@ irm https://christianhelle.com/skills/install.ps1 | iex
 ```powershell
 .\install.ps1
 ```
+
+You'll see a numbered list of available skills and can select the ones you want:
+
+```
+  Available skills:
+
+     1) azdocli                  Interact with Azure DevOps via the azdocli CLI tool.
+     2) nano-commits             Autonomous nano-commit workflow.
+     3) worktree-isolation       Isolate all work in a fresh git worktree.
+
+  Press Enter to install all, type skill numbers (e.g. 1,2),
+  'all' to install everything, or 'none' to skip:
+  >
+```
+
+- **Press Enter** — installs all skills (default)
+- **Type `1,3`** — installs only those numbered skills
+- **Type `all`** — installs everything
+- **Type `none`** — skips installation
 
 ### Options
 
@@ -58,16 +81,19 @@ irm https://christianhelle.com/skills/install.ps1 | iex
 
 | Param / Flag | Default | Description |
 |--------------|---------|-------------|
-| `-Skill` / `--skill` | all skills | One or more skill names to install (repeatable in bash) |
+| `-Skill` / `--skill` | all skills | One or more skill names to install (repeatable in bash). Skips the interactive prompt |
 | `-Tag` / `--tag` | `main` | Git tag or branch to install from (auto-detected) |
 | `-Force` / `--force` | off | Overwrite existing skills without prompting |
-| `-WhatIf` / `--whatif` | off | Dry run — show what would be installed |
+| `-WhatIf` / `--whatif` | off | Dry run — show what would be installed. Skips the interactive prompt |
 
 ### Examples
 
 ```bash
-# Install everything from the main branch
+# Interactive: shows a selection menu, installs all by default
 ./install.sh
+
+# Install everything from the main branch (non-interactive)
+curl -fsSL https://christianhelle.com/skills/install | bash
 
 # Install only nano-commits
 ./install.sh --skill nano-commits
@@ -84,8 +110,9 @@ irm https://christianhelle.com/skills/install.ps1 | iex
 1. Downloads the repo archive as `.zip` from GitHub (no git required)
 2. Extracts to a temporary directory
 3. Scans for subdirectories containing `SKILL.md` (each is a skill)
-4. Copies matching skills to `~/.agents/skills/<name>/`
-5. Cleans up the temporary directory
+4. **In interactive mode:** shows a selection menu and filters to user's choices
+5. Copies matching skills to `~/.agents/skills/<name>/`
+6. Cleans up the temporary directory
 
 The installation is **additive** — it never removes skills already present in `~/.agents/skills/`.
 
