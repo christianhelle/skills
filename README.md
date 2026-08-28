@@ -51,7 +51,7 @@ When run from a local clone, the installer prompts you to choose which skills to
 
 You'll see a numbered list of available skills and can select the ones you want:
 
-```
+```text
   Available skills:
 
      1) azdocli                  Interact with Azure DevOps via the azdocli CLI tool.
