@@ -81,6 +81,13 @@ while IFS= read -r dir; do
   if [ -f "$skill_md" ]; then
     desc=$(awk '
       { sub(/\r$/, "") }
+      # Flush folded scalar on closing fence
+      fence == 1 && /^---$/ && capturing {
+        gsub(/\n/, " ", folded)
+        sub(/\..*/, ".", folded)
+        print folded
+        exit
+      }
       /^---$/ { fence++; next }
       fence == 1 && /^description:/ {
         sub(/^description:[[:space:]]*/, "")
@@ -102,7 +109,7 @@ while IFS= read -r dir; do
         next
       }
       fence == 1 && capturing {
-        # End of folded scalar — print first sentence
+        # End of folded scalar — non-indented line
         gsub(/\n/, " ", folded)
         sub(/\..*/, ".", folded)
         print folded
