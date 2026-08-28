@@ -98,7 +98,7 @@ while IFS= read -r dir; do
       }
       fence == 1 && capturing && /^[[:space:]]/ {
         sub(/^[[:space:]]+/, "")
-        folded = folded " " $0
+        if (folded == "") folded = $0; else folded = folded " " $0
         next
       }
       fence == 1 && capturing {

@@ -76,7 +76,11 @@ function Get-SkillDescription {
 
         if ($capturing) {
             if ($line -match '^\s+(.*)') {
-                $folded += " " + $Matches[1].Trim()
+                if ($folded) {
+                    $folded += " " + $Matches[1].Trim()
+                } else {
+                    $folded = $Matches[1].Trim()
+                }
             } else {
                 $periodIdx = $folded.IndexOf('.')
                 if ($periodIdx -gt 0) { return $folded.Substring(0, $periodIdx + 1) }
