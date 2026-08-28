@@ -51,7 +51,8 @@ function Get-SkillDescription {
     $capturing = $false
     $folded = ""
 
-    foreach ($line in $content -split "`n") {
+    foreach ($line in ($content -split "`n")) {
+        $line = $line.TrimEnd("`r")
         if ($line -match '^---$') {
             if ($inFrontmatter) { break }
             $inFrontmatter = $true
