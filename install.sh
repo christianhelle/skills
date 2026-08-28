@@ -226,6 +226,45 @@ INSTALLED=0
 SKIPPED=0
 ERRORS=0
 
+# ---- single overwrite prompt for existing skills ----
+if ! $WHATIF && ! $FORCE; then
+  EXISTING=()
+  for name in "${ALL_SKILLS[@]}"; do
+    if [ -d "${DEST_ROOT}/${name}" ]; then
+      EXISTING+=("$name")
+    fi
+  done
+
+  if [ "${#EXISTING[@]}" -gt 0 ]; then
+    if [ "${#EXISTING[@]}" -eq 1 ]; then
+      printf "  '%s' already exists. Overwrite? [y/N] " "${EXISTING[0]}" >&2
+    else
+      printf "  %d skill(s) already exist: %s\n" "${#EXISTING[@]}" "${EXISTING[*]}" >&2
+      printf "  Overwrite all? [y/N] " >&2
+    fi
+    read -r OVERWRITE_ANSWER </dev/tty
+    if [ "$OVERWRITE_ANSWER" != "y" ] && [ "$OVERWRITE_ANSWER" != "Y" ]; then
+      echo "  Skipping existing skills." >&2
+      # Remove existing skills from install list
+      FILTERED=()
+      for name in "${ALL_SKILLS[@]}"; do
+        skip=false
+        for existing in "${EXISTING[@]}"; do
+          if [ "$name" = "$existing" ]; then skip=true; break; fi
+        done
+        if ! $skip; then
+          FILTERED+=("$name")
+        fi
+      done
+      ALL_SKILLS=("${FILTERED[@]}")
+      if [ "${#ALL_SKILLS[@]}" -eq 0 ]; then
+        echo "  Nothing new to install." >&2
+        exit 0
+      fi
+    fi
+  fi
+fi
+
 for name in "${ALL_SKILLS[@]}"; do
   src="${EXTRACTED}/${name}"
   dst="${DEST_ROOT}/${name}"
@@ -238,15 +277,6 @@ for name in "${ALL_SKILLS[@]}"; do
     fi
     INSTALLED=$((INSTALLED + 1))
     continue
-  fi
-
-  if [ -d "$dst" ] && ! $FORCE; then
-    read -r -p "  '${name}' already exists. Overwrite? [y/N] " answer </dev/tty
-    if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
-      echo "  Skipped ${name}" >&2
-      SKIPPED=$((SKIPPED + 1))
-      continue
-    fi
   fi
 
   if cp -r "$src" "$dst" 2>/dev/null; then

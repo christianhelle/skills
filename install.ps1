@@ -245,25 +245,46 @@ try {
     $Skipped = 0
     $Errors = 0
 
+    # ---- single overwrite prompt for existing skills ----
+    if (-not $WhatIf -and -not $Force) {
+        $Existing = @()
+        foreach ($Dir in $AllSkills) {
+            $DestPath = Join-Path $DestRoot $Dir.Name
+            if (Test-Path $DestPath) {
+                $Existing += $Dir.Name
+            }
+        }
+
+        if ($Existing.Count -gt 0) {
+            if ($Existing.Count -eq 1) {
+                Write-Host "  '$($Existing[0])' already exists. Overwrite? [y/N] " -NoNewline -ForegroundColor White
+            } else {
+                Write-Host "  $($Existing.Count) skill(s) already exist: $($Existing -join ', ')" -ForegroundColor White
+                Write-Host "  Overwrite all? [y/N] " -NoNewline -ForegroundColor White
+            }
+            $overwriteAnswer = Read-Host
+
+            if ($overwriteAnswer -ne 'y' -and $overwriteAnswer -ne 'Y') {
+                Write-Host "  Skipping existing skills." -ForegroundColor Yellow
+                $AllSkills = $AllSkills | Where-Object { $_.Name -notin $Existing }
+                if ($AllSkills.Count -eq 0) {
+                    Write-Host "  Nothing new to install." -ForegroundColor Yellow
+                    exit 0
+                }
+            }
+        }
+    }
+
     foreach ($Dir in $AllSkills) {
         $SkillName = $Dir.Name
         $DestPath = Join-Path $DestRoot $SkillName
-        $Exists = Test-Path $DestPath
 
         if ($WhatIf) {
+            $Exists = Test-Path $DestPath
             $action = if ($Exists) { "would overwrite" } else { "would install" }
             Write-Host "  $action : $SkillName" -ForegroundColor DarkCyan
             $Installed++
             continue
-        }
-
-        if ($Exists -and -not $Force) {
-            $answer = Read-Host "  '$SkillName' already exists. Overwrite? [y/N]"
-            if ($answer -ne "y" -and $answer -ne "Y") {
-                Write-Host "  Skipped $SkillName" -ForegroundColor DarkYellow
-                $Skipped++
-                continue
-            }
         }
 
         try {
