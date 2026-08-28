@@ -211,16 +211,17 @@ if [ "${#SKILLS[@]}" -gt 0 ]; then
   UNKNOWN=()
   FILTERED=()
   FILTERED_DESCS=()
-  for i in "${!ALL_SKILLS[@]}"; do
-    s="${ALL_SKILLS[$i]}"
+  for s in "${SKILLS[@]}"; do
     found=false
-    for valid in "${SKILLS[@]}"; do
-      if [ "$s" = "$valid" ]; then found=true; break; fi
+    for i in "${!ALL_SKILLS[@]}"; do
+      if [ "$s" = "${ALL_SKILLS[$i]}" ]; then
+        found=true
+        FILTERED+=("$s")
+        FILTERED_DESCS+=("${SKILL_DESCS[$i]:-}")
+        break
+      fi
     done
-    if $found; then
-      FILTERED+=("$s")
-      FILTERED_DESCS+=("${SKILL_DESCS[$i]:-}")
-    else
+    if ! $found; then
       UNKNOWN+=("$s")
     fi
   done
@@ -253,7 +254,7 @@ if ! $WHATIF && ! $FORCE; then
 
   if [ "${#EXISTING[@]}" -gt 0 ]; then
     OVERWRITE_ANSWER=""
-    if [ -r /dev/tty ]; then
+    if [ -t 0 ]; then
       if [ "${#EXISTING[@]}" -eq 1 ]; then
         printf "  '%s' already exists. Overwrite? [y/N] " "${EXISTING[0]}" >&2
       else
@@ -263,7 +264,9 @@ if ! $WHATIF && ! $FORCE; then
       read -r OVERWRITE_ANSWER </dev/tty
     fi
     if [ "$OVERWRITE_ANSWER" != "y" ] && [ "$OVERWRITE_ANSWER" != "Y" ]; then
-      echo "  Skipping existing skills." >&2
+      SKIP_COUNT=${#EXISTING[@]}
+      echo "  Skipping $SKIP_COUNT existing skill(s)." >&2
+      SKIPPED=$((SKIPPED + SKIP_COUNT))
       # Remove existing skills from install list
       FILTERED=()
       FILTERED_DESCS=()
