@@ -80,6 +80,7 @@ while IFS= read -r dir; do
   skill_md="${dir}/SKILL.md"
   if [ -f "$skill_md" ]; then
     desc=$(awk '
+      { sub(/\r$/, "") }
       /^---$/ { fence++; next }
       fence == 1 && /^description:/ {
         sub(/^description:[[:space:]]*/, "")
