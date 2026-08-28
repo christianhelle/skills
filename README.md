@@ -10,6 +10,7 @@ Skills are directories containing a `SKILL.md` file that instructs an agent on d
 |-------|-------------|
 | [azdocli](./azdocli) | Interact with Azure DevOps — repos, PRs, pipelines, boards, projects |
 | [nano-commits](./nano-commits) | Autonomous nano-commit workflow — slice work into the smallest independently-testable logical groups |
+| [tdd](./tdd) | Test-driven development — red-green-refactor loop, seam selection, and anti-pattern avoidance |
 | [worktree-isolation](./worktree-isolation) | Do work in an isolated git worktree, leaving the main checkout untouched |
 
 ## Installation
