@@ -9,6 +9,7 @@ Skills are directories containing a `SKILL.md` file that instructs an agent on d
 | Skill | Description |
 |-------|-------------|
 | [azdocli](./azdocli) | Interact with Azure DevOps — repos, PRs, pipelines, boards, projects |
+| [karpathy](./karpathy) | Behavioral guidelines to reduce common LLM coding mistakes — think before coding, simplicity first, surgical changes, goal-driven execution |
 | [nano-commits](./nano-commits) | Autonomous nano-commit workflow — slice work into the smallest independently-testable logical groups |
 | [tdd](./tdd) | Test-driven development — red-green-refactor loop, seam selection, and anti-pattern avoidance |
 | [worktree-isolation](./worktree-isolation) | Do work in an isolated git worktree, leaving the main checkout untouched |
@@ -55,8 +56,9 @@ You'll see a numbered list of available skills and can select the ones you want:
   Available skills:
 
      1) azdocli                  Interact with Azure DevOps via the azdocli CLI tool.
-     2) nano-commits             Autonomous nano-commit workflow.
-     3) worktree-isolation       Isolate all work in a fresh git worktree.
+     2) karpathy                 Behavioral guidelines to reduce common LLM coding mistakes.
+     3) nano-commits             Autonomous nano-commit workflow.
+     4) worktree-isolation       Isolate all work in a fresh git worktree.
 
   Press Enter to install all, type skill numbers (e.g. 1,2),
   'all' to install everything, or 'none' to skip:
