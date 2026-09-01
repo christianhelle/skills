@@ -156,6 +156,27 @@ azdocli repos pr create --repo MyRepo --source feature/my-feature --target main 
 azdocli repos pr create --repo MyRepo --source bugfix/fix-login --title "Fix login" --description "Detailed description here"
 ```
 
+### `azdocli repos pr update`
+
+Update an existing pull request's title and/or description.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-r, --repo <NAME>` | Yes | Repository name |
+| `-i, --id <PR_ID>` | Yes | Pull request ID (numeric) |
+| `-t, --title <TITLE>` | One of | New title |
+| `-d, --description <DESC>` | One of | New description |
+| `--description-file <PATH>` | One of | Read description from markdown file |
+| `-p, --project <NAME>` | No | Team project |
+
+> At least one of `--title`, `--description`, or `--description-file` is required. File contents take precedence over `--description`.
+
+```bash
+azdocli repos pr update --repo MyRepo --id 123 --title "New title" --description "New description"
+azdocli repos pr update --repo MyRepo --id 123 --title "New title"
+azdocli repos pr update --repo MyRepo --id 123 --description-file ./description.md
+```
+
 ### `azdocli repos pr commits`
 
 Show commits in a pull request.
