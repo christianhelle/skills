@@ -57,7 +57,7 @@ azdocli repos pr create \
 | `--title` | `Pull Request` | |
 | `--description` | *(none)* | Optional |
 
-### PR lifecycle (view only)
+### PR lifecycle (view & update)
 
 ```bash
 # List PRs in a repo
@@ -68,9 +68,13 @@ azdocli repos pr show --repo "$REPO" --id 123
 
 # Show commits in a PR
 azdocli repos pr commits --repo "$REPO" --id 123
+
+# Update PR title / description
+azdocli repos pr update --repo "$REPO" --id 123 --title "New title"
+azdocli repos pr update --repo "$REPO" --id 123 --description-file ./description.md
 ```
 
-> Approval and merge happen in the Azure DevOps web UI — azdocli is view + create only.
+> Approval, merge, and most edits happen in the Azure DevOps web UI — azdocli can create PRs and update their title/description.
 
 ## Other commands (quick reference)
 
