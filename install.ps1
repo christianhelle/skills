@@ -314,6 +314,7 @@ try {
                 continue
             }
 
+            if ($Overwrite -and (Test-Path $DestPath)) { Remove-Item -Path $DestPath -Recurse -Force -ErrorAction SilentlyContinue }
             try {
                 Copy-Item -Path $Dir.FullName -Destination $DestPath -Recurse -Force -ErrorAction Stop
                 Write-Host "  Installed: $SkillName -> $Root\" -ForegroundColor Green
