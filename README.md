@@ -114,10 +114,10 @@ curl -fsSL https://christianhelle.com/skills/install | bash
 2. Extracts to a temporary directory
 3. Scans for subdirectories containing `SKILL.md` (each is a skill)
 4. **In interactive mode:** shows a selection menu and filters to user's choices
-5. Copies matching skills to `~/.agents/skills/<name>/`
+5. Copies matching skills to `~/.agents/skills/<name>/` and `~/.claude/skills/<name>/` (Claude Code only reads `~/.claude/skills/`)
 6. Cleans up the temporary directory
 
-The installation is **additive** — it never removes skills already present in `~/.agents/skills/`.
+The installation is **additive** — it never removes skills already present in `~/.agents/skills/` or `~/.claude/skills/`.
 
 ## Creating a Skill
 

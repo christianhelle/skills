@@ -4,6 +4,8 @@ set -euo pipefail
 
 REPO="christianhelle/skills"
 DEST_ROOT="${HOME}/.agents/skills"
+DEST_ROOT_CLAUDE="${HOME}/.claude/skills"
+DEST_ROOTS=("$DEST_ROOT" "$DEST_ROOT_CLAUDE")
 SKILLS=()
 TAG="main"
 FORCE=false
@@ -236,19 +238,35 @@ if [ "${#SKILLS[@]}" -gt 0 ]; then
 fi
 
 # ---- install ----
-mkdir -p "$DEST_ROOT"
+for dest in "${DEST_ROOTS[@]}"; do
+  mkdir -p "$dest"
+done
 
 INSTALLED=0
 SKIPPED=0
 ERRORS=0
+OVERWRITE=false
+if $FORCE; then
+  OVERWRITE=true
+fi
 
 # ---- single overwrite prompt for existing skills ----
 if ! $WHATIF && ! $FORCE; then
   EXISTING=()
   for name in "${ALL_SKILLS[@]}"; do
-    if [ -d "${DEST_ROOT}/${name}" ]; then
-      EXISTING+=("$name")
-    fi
+    for dest in "${DEST_ROOTS[@]}"; do
+      if [ -d "${dest}/${name}" ]; then
+        # Avoid duplicates
+        already=false
+        for e in "${EXISTING[@]}"; do
+          if [ "$e" = "$name" ]; then already=true; break; fi
+        done
+        if ! $already; then
+          EXISTING+=("$name")
+        fi
+        break
+      fi
+    done
   done
 
   if [ "${#EXISTING[@]}" -gt 0 ]; then
@@ -262,51 +280,54 @@ if ! $WHATIF && ! $FORCE; then
       fi
       read -r OVERWRITE_ANSWER </dev/tty
     fi
-    if [ "$OVERWRITE_ANSWER" != "y" ] && [ "$OVERWRITE_ANSWER" != "Y" ]; then
-      echo "  Skipping existing skills." >&2
-      # Remove existing skills from install list
-      FILTERED=()
-      FILTERED_DESCS=()
-      for i in "${!ALL_SKILLS[@]}"; do
-        skip=false
-        for existing in "${EXISTING[@]}"; do
-          if [ "${ALL_SKILLS[$i]}" = "$existing" ]; then skip=true; break; fi
-        done
-        if ! $skip; then
-          FILTERED+=("${ALL_SKILLS[$i]}")
-          FILTERED_DESCS+=("${SKILL_DESCS[$i]:-}")
-        fi
-      done
-      ALL_SKILLS=("${FILTERED[@]}")
-      SKILL_DESCS=("${FILTERED_DESCS[@]}")
-      if [ "${#ALL_SKILLS[@]}" -eq 0 ]; then
-        echo "  Nothing new to install." >&2
-        exit 0
-      fi
+    if [ "$OVERWRITE_ANSWER" = "y" ] || [ "$OVERWRITE_ANSWER" = "Y" ]; then
+      OVERWRITE=true
+    else
+      echo "  Skipping existing skills where they already exist." >&2
+      OVERWRITE=false
     fi
   fi
 fi
 
 for name in "${ALL_SKILLS[@]}"; do
   src="${EXTRACTED}/${name}"
-  dst="${DEST_ROOT}/${name}"
 
   if $WHATIF; then
-    if [ -d "$dst" ]; then
-      echo "  would overwrite: ${name}" >&2
-    else
-      echo "  would install:   ${name}" >&2
-    fi
+    for dest in "${DEST_ROOTS[@]}"; do
+      dst="${dest}/${name}"
+      if [ -d "$dst" ]; then
+        echo "  would overwrite: ${name} -> ${dest}/" >&2
+      else
+        echo "  would install:   ${name} -> ${dest}/" >&2
+      fi
+    done
     INSTALLED=$((INSTALLED + 1))
     continue
   fi
 
-  if cp -r "$src" "$dst" 2>/dev/null; then
-    echo "  Installed: ${name}" >&2
+  skill_installed=false
+  skill_skipped=false
+  for dest in "${DEST_ROOTS[@]}"; do
+    dst="${dest}/${name}"
+
+    if [ -d "$dst" ] && ! $OVERWRITE; then
+      skill_skipped=true
+      continue
+    fi
+
+    if cp -r "$src" "$dst" 2>/dev/null; then
+      echo "  Installed: ${name} -> ${dest}/" >&2
+      skill_installed=true
+    else
+      echo "  Error writing ${name} -> ${dest}/" >&2
+      ERRORS=$((ERRORS + 1))
+    fi
+  done
+
+  if $skill_installed; then
     INSTALLED=$((INSTALLED + 1))
-  else
-    echo "  Error writing ${name}" >&2
-    ERRORS=$((ERRORS + 1))
+  elif $skill_skipped; then
+    SKIPPED=$((SKIPPED + 1))
   fi
 done
 

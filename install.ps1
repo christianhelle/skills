@@ -6,8 +6,9 @@
 
 .DESCRIPTION
     Downloads skills from the christianhelle/skills repository and installs them
-    to ~/.agents/skills/. Skills are directories containing a SKILL.md file.
-    When run interactively, prompts you to choose which skills to install.
+    to ~/.agents/skills/ and ~/.claude/skills/. Skills are directories containing
+    a SKILL.md file. When run interactively, prompts you to choose which skills
+    to install. Claude Code requires skills under ~/.claude/skills/.
 
 .PARAMETER Skill
     One or more skill names to install. Defaults to all skills.
@@ -41,6 +42,8 @@ param(
 
 $Repo = "christianhelle/skills"
 $DestRoot = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".agents" "skills"
+$DestRootClaude = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".claude" "skills"
+$DestRoots = @($DestRoot, $DestRootClaude)
 
 function Get-SkillDescription {
     param([string]$SkillMdPath)
@@ -241,22 +244,30 @@ try {
         }
     }
 
-    if (-not (Test-Path $DestRoot)) {
-        New-Item -ItemType Directory -Path $DestRoot -Force | Out-Null
+    foreach ($Root in $DestRoots) {
+        if (-not (Test-Path $Root)) {
+            New-Item -ItemType Directory -Path $Root -Force | Out-Null
+        }
     }
 
     # ---- install ----
     $Installed = 0
     $Skipped = 0
     $Errors = 0
+    $Overwrite = $Force.IsPresent
 
     # ---- single overwrite prompt for existing skills ----
     if (-not $WhatIf -and -not $Force) {
         $Existing = @()
         foreach ($Dir in $AllSkills) {
-            $DestPath = Join-Path $DestRoot $Dir.Name
-            if (Test-Path $DestPath) {
-                $Existing += $Dir.Name
+            foreach ($Root in $DestRoots) {
+                $DestPath = Join-Path $Root $Dir.Name
+                if (Test-Path $DestPath) {
+                    if ($Dir.Name -notin $Existing) {
+                        $Existing += $Dir.Name
+                    }
+                    break
+                }
             }
         }
 
@@ -269,36 +280,53 @@ try {
             }
             $overwriteAnswer = Read-Host
 
-            if ($overwriteAnswer -ne 'y' -and $overwriteAnswer -ne 'Y') {
-                Write-Host "  Skipping existing skills." -ForegroundColor Yellow
-                $AllSkills = $AllSkills | Where-Object { $_.Name -notin $Existing }
-                if ($AllSkills.Count -eq 0) {
-                    Write-Host "  Nothing new to install." -ForegroundColor Yellow
-                    exit 0
-                }
+            if ($overwriteAnswer -eq 'y' -or $overwriteAnswer -eq 'Y') {
+                $Overwrite = $true
+            } else {
+                Write-Host "  Skipping existing skills where they already exist." -ForegroundColor Yellow
+                $Overwrite = $false
             }
         }
     }
 
     foreach ($Dir in $AllSkills) {
         $SkillName = $Dir.Name
-        $DestPath = Join-Path $DestRoot $SkillName
 
         if ($WhatIf) {
-            $Exists = Test-Path $DestPath
-            $action = if ($Exists) { "would overwrite" } else { "would install" }
-            Write-Host "  $action : $SkillName" -ForegroundColor DarkCyan
+            foreach ($Root in $DestRoots) {
+                $DestPath = Join-Path $Root $SkillName
+                $Exists = Test-Path $DestPath
+                $action = if ($Exists) { "would overwrite" } else { "would install" }
+                Write-Host "  $action : $SkillName -> $Root\" -ForegroundColor DarkCyan
+            }
             $Installed++
             continue
         }
 
-        try {
-            Copy-Item -Path $Dir.FullName -Destination $DestPath -Recurse -Force -ErrorAction Stop
-            Write-Host "  Installed: $SkillName" -ForegroundColor Green
+        $skillInstalled = $false
+        $skillSkipped = $false
+        foreach ($Root in $DestRoots) {
+            $DestPath = Join-Path $Root $SkillName
+
+            if ((Test-Path $DestPath) -and -not $Overwrite) {
+                $skillSkipped = $true
+                continue
+            }
+
+            try {
+                Copy-Item -Path $Dir.FullName -Destination $DestPath -Recurse -Force -ErrorAction Stop
+                Write-Host "  Installed: $SkillName -> $Root\" -ForegroundColor Green
+                $skillInstalled = $true
+            } catch {
+                Write-Host "  Error writing $SkillName -> $Root\ : $_" -ForegroundColor Red
+                $Errors++
+            }
+        }
+
+        if ($skillInstalled) {
             $Installed++
-        } catch {
-            Write-Host "  Error writing $SkillName : $_" -ForegroundColor Red
-            $Errors++
+        } elseif ($skillSkipped) {
+            $Skipped++
         }
     }
 
