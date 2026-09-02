@@ -41,8 +41,8 @@ param(
 )
 
 $Repo = "christianhelle/skills"
-$DestRoot = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".agents" "skills"
-$DestRootClaude = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".claude" "skills"
+$DestRoot = Join-Path -Path ([Environment]::GetFolderPath("UserProfile")) -ChildPath ".agents" -AdditionalChildPath "skills"
+$DestRootClaude = Join-Path -Path ([Environment]::GetFolderPath("UserProfile")) -ChildPath ".claude" -AdditionalChildPath "skills"
 $DestRoots = @($DestRoot, $DestRootClaude)
 
 function Get-SkillDescription {
