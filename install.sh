@@ -316,6 +316,7 @@ for name in "${ALL_SKILLS[@]}"; do
       continue
     fi
 
+    if [ -d "$dst" ]; then rm -rf "$dst"; fi
     if cp -r "$src" "$dst" 2>/dev/null; then
       echo "  Installed: ${name} -> ${dest}/" >&2
       skill_installed=true
