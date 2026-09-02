@@ -305,6 +305,7 @@ try {
 
         $skillInstalled = $false
         $skillSkipped = $false
+        $skillError = $false
         foreach ($Root in $DestRoots) {
             $DestPath = Join-Path $Root $SkillName
 
@@ -319,11 +320,14 @@ try {
                 $skillInstalled = $true
             } catch {
                 Write-Host "  Error writing $SkillName -> $Root\ : $_" -ForegroundColor Red
+                $skillError = $true
                 $Errors++
             }
         }
 
-        if ($skillInstalled) {
+        if ($skillError) {
+            # do not count as installed or skipped when any dest errored
+        } elseif ($skillInstalled) {
             $Installed++
         } elseif ($skillSkipped) {
             $Skipped++
