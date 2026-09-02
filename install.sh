@@ -307,6 +307,7 @@ for name in "${ALL_SKILLS[@]}"; do
 
   skill_installed=false
   skill_skipped=false
+  skill_error=false
   for dest in "${DEST_ROOTS[@]}"; do
     dst="${dest}/${name}"
 
@@ -320,11 +321,14 @@ for name in "${ALL_SKILLS[@]}"; do
       skill_installed=true
     else
       echo "  Error writing ${name} -> ${dest}/" >&2
+      skill_error=true
       ERRORS=$((ERRORS + 1))
     fi
   done
 
-  if $skill_installed; then
+  if $skill_error; then
+    :
+  elif $skill_installed; then
     INSTALLED=$((INSTALLED + 1))
   elif $skill_skipped; then
     SKIPPED=$((SKIPPED + 1))
