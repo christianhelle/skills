@@ -56,6 +56,12 @@ azdocli repos pr create \
 | `--target` | `main` | Target branch (auto-prefixed with `refs/heads/`) |
 | `--title` | `Pull Request` | |
 | `--description` | *(none)* | Optional |
+| `--draft` | `false` | Open as a draft |
+| `--reviewer` | *(none)* | Repeatable; email, identity ID, or `@me` |
+| `--work-item` | *(none)* | Repeatable; link a work item ID |
+| `--label` | *(none)* | Repeatable |
+| `--auto-complete` | `false` | Merge automatically once policies pass |
+| `--delete-source-branch` | `false` | Delete source branch on completion |
 
 ### PR lifecycle (view & update)
 
