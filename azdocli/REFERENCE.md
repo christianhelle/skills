@@ -211,6 +211,113 @@ Show commits in a pull request.
 azdocli repos pr commits --repo MyRepo --id 123
 ```
 
+### `azdocli repos pr complete`
+
+Merge a pull request.
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `-r, --repo <NAME>` | Yes | | Repository name |
+| `-i, --id <PR_ID>` | Yes | | Pull request ID (numeric) |
+| `--merge-strategy <STRATEGY>` | No | *(server default)* | e.g. `squash` |
+| `--delete-source-branch` | No | `false` | Delete source branch after merge |
+| `--auto-complete` | No | `false` | Complete automatically once policies pass |
+| `--bypass-policy` | No | `false` | Complete despite failing branch policies |
+| `--bypass-reason <TEXT>` | No | *(none)* | Reason recorded when bypassing policy |
+| `-y, --yes` | No | `false` | Skip confirmation |
+| `-p, --project <NAME>` | No | Team project |
+
+```bash
+azdocli repos pr complete --repo MyRepo --id 123 --merge-strategy squash --delete-source-branch
+azdocli repos pr complete --repo MyRepo --id 123 --auto-complete --yes
+azdocli repos pr complete --repo MyRepo --id 123 --bypass-policy --bypass-reason "hotfix"
+```
+
+### `azdocli repos pr abandon`
+
+Close a pull request without merging.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-r, --repo <NAME>` | Yes | Repository name |
+| `-i, --id <PR_ID>` | Yes | Pull request ID (numeric) |
+| `-y, --yes` | No | Skip confirmation |
+| `-p, --project <NAME>` | No | Team project |
+
+```bash
+azdocli repos pr abandon --repo MyRepo --id 123 --yes
+```
+
+### `azdocli repos pr reactivate`
+
+Reopen an abandoned pull request.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-r, --repo <NAME>` | Yes | Repository name |
+| `-i, --id <PR_ID>` | Yes | Pull request ID (numeric) |
+| `-p, --project <NAME>` | No | Team project |
+
+```bash
+azdocli repos pr reactivate --repo MyRepo --id 123
+```
+
+### `azdocli repos pr reviewers`
+
+Manage pull request reviewers. Reviewers can be given as an email address, an identity ID, or `@me` for the signed-in user.
+
+| Subcommand | Flags | Description |
+|------------|-------|-------------|
+| `list` | `-r, --repo`, `-i, --id`, `-p, --project` | List reviewers with their votes |
+| `add` | `-r, --repo`, `-i, --id`, `--reviewer <IDENTITY>` (repeatable), `--required`, `-p, --project` | Add reviewer(s), optionally required |
+| `remove` | `-r, --repo`, `-i, --id`, `--reviewer <IDENTITY>`, `-p, --project` | Remove a reviewer |
+| `vote` | `-r, --repo`, `-i, --id`, `--vote <VOTE>`, `-p, --project` | Cast your own vote |
+
+Valid votes: `approve`, `approve-with-suggestions`, `reset`, `wait-for-author`, `reject`.
+
+```bash
+azdocli repos pr reviewers list --repo MyRepo --id 123
+azdocli repos pr reviewers add --repo MyRepo --id 123 --reviewer alice@example.com --required
+azdocli repos pr reviewers remove --repo MyRepo --id 123 --reviewer alice@example.com
+azdocli repos pr reviewers vote --repo MyRepo --id 123 --vote approve
+```
+
+### `azdocli repos pr threads`
+
+Read the discussion on a pull request. System-generated threads are hidden unless `--all` is given.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-r, --repo <NAME>` | Yes | Repository name |
+| `-i, --id <PR_ID>` | Yes | Pull request ID (numeric) |
+| `--all` | No | Include system-generated threads |
+| `-p, --project <NAME>` | No | Team project |
+
+```bash
+azdocli repos pr threads --repo MyRepo --id 123
+azdocli repos pr threads --repo MyRepo --id 123 --all
+```
+
+### `azdocli repos pr comment`
+
+Write to pull request discussion threads.
+
+| Subcommand | Flags | Description |
+|------------|-------|-------------|
+| `add` | `-r, --repo`, `-i, --id`, `--message <TEXT>`, `--file <PATH>`, `--line <N>`, `-p, --project` | Start a new thread, optionally anchored to a file/line |
+| `reply` | `-r, --repo`, `-i, --id`, `--thread <ID>`, `--message <TEXT>`, `-p, --project` | Reply to an existing thread |
+| `resolve` | `-r, --repo`, `-i, --id`, `--thread <ID>`, `--status <STATUS>`, `-p, --project` | Resolve a thread |
+
+Valid thread statuses: `fixed`, `wont-fix`, `closed`, `by-design`, `active`, `pending`.
+
+```bash
+azdocli repos pr comment add --repo MyRepo --id 123 --message "Looks good to me"
+azdocli repos pr comment add --repo MyRepo --id 123 --message "Needs a null check" --file "/src/main.rs" --line 42
+azdocli repos pr comment reply --repo MyRepo --id 123 --thread 7 --message "Fixed in the latest push"
+azdocli repos pr comment resolve --repo MyRepo --id 123 --thread 7
+azdocli repos pr comment resolve --repo MyRepo --id 123 --thread 7 --status wont-fix
+```
+
 ## Pipelines
 
 ### `azdocli pipelines list`
