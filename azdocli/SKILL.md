@@ -74,7 +74,26 @@ azdocli repos pr update --repo "$REPO" --id 123 --title "New title"
 azdocli repos pr update --repo "$REPO" --id 123 --description-file ./description.md
 ```
 
-> Approval, merge, and most edits happen in the Azure DevOps web UI — azdocli can create PRs and update their title/description.
+### PR review, discussion & merge
+
+```bash
+# Manage reviewers (email, identity ID, or @me)
+azdocli repos pr reviewers add --repo "$REPO" --id 123 --reviewer alice@example.com
+azdocli repos pr reviewers vote --repo "$REPO" --id 123 --vote approve
+
+# Read and write comments
+azdocli repos pr threads --repo "$REPO" --id 123
+azdocli repos pr comment add --repo "$REPO" --id 123 --message "Looks good to me"
+azdocli repos pr comment reply --repo "$REPO" --id 123 --thread 7 --message "Fixed"
+azdocli repos pr comment resolve --repo "$REPO" --id 123 --thread 7
+
+# Complete, abandon or reactivate
+azdocli repos pr complete --repo "$REPO" --id 123 --merge-strategy squash --delete-source-branch
+azdocli repos pr abandon --repo "$REPO" --id 123 --yes
+azdocli repos pr reactivate --repo "$REPO" --id 123
+```
+
+> azdocli can create, update, review, discuss, and merge PRs — most edits no longer require the Azure DevOps web UI.
 
 ## Other commands (quick reference)
 
