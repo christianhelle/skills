@@ -115,13 +115,21 @@ azdocli repos clone --target-dir ./repos --yes --parallel --concurrency 8
 
 List pull requests for a repository.
 
-| Flag | Required | Description |
-|------|----------|-------------|
-| `-r, --repo <NAME>` | Yes | Repository name |
-| `-p, --project <NAME>` | No | Team project |
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `-r, --repo <NAME>` | Yes | | Repository name |
+| `--status <STATUS>` | No | `active` | `active`, `completed`, `abandoned`, or `all` |
+| `--creator <IDENTITY>` | No | *(none)* | Filter by author; email, identity ID, or `@me` |
+| `--reviewer <IDENTITY>` | No | *(none)* | Filter by reviewer; email, identity ID, or `@me` |
+| `--source <BRANCH>` | No | *(none)* | Filter by source branch |
+| `--target <BRANCH>` | No | *(none)* | Filter by target branch |
+| `--top <N>` | No | *(none)* | Cap the number of results |
+| `-p, --project <NAME>` | No | default | Team project |
 
 ```bash
 azdocli repos pr list --repo MyRepo
+azdocli repos pr list --repo MyRepo --status completed
+azdocli repos pr list --repo MyRepo --creator @me --top 10
 ```
 
 ### `azdocli repos pr show`
@@ -133,9 +141,11 @@ Show details of a specific pull request.
 | `-r, --repo <NAME>` | Yes | Repository name |
 | `-i, --id <PR_ID>` | Yes | Pull request ID (numeric) |
 | `-p, --project <NAME>` | No | Team project |
+| `--web` | No | Open in browser instead |
 
 ```bash
 azdocli repos pr show --repo MyRepo --id 123
+azdocli repos pr show --repo MyRepo --id 123 --web
 ```
 
 ### `azdocli repos pr create`
@@ -149,11 +159,21 @@ Create a new pull request.
 | `--target <BRANCH>` | No | `main` | Target branch (auto-prefixed) |
 | `-t, --title <TITLE>` | No | `Pull Request` | PR title |
 | `-d, --description <DESC>` | No | *(none)* | PR description |
+| `--draft` | No | `false` | Open as a draft |
+| `--reviewer <IDENTITY>` | No | *(none)* | Repeatable; email, identity ID, or `@me` |
+| `--work-item <ID>` | No | *(none)* | Repeatable; link a work item ID |
+| `--label <LABEL>` | No | *(none)* | Repeatable |
+| `--auto-complete` | No | `false` | Complete automatically once policies pass |
+| `--delete-source-branch` | No | `false` | Delete source branch on completion |
 | `-p, --project <NAME>` | No | default | Team project |
 
 ```bash
 azdocli repos pr create --repo MyRepo --source feature/my-feature --target main --title "My Feature"
 azdocli repos pr create --repo MyRepo --source bugfix/fix-login --title "Fix login" --description "Detailed description here"
+azdocli repos pr create --repo MyRepo --source feature/my-feature --title "My Feature" \
+  --draft --reviewer alice@example.com --work-item 1234 --label "needs-review"
+azdocli repos pr create --repo MyRepo --source feature/my-feature --title "My Feature" \
+  --auto-complete --delete-source-branch
 ```
 
 ### `azdocli repos pr update`
