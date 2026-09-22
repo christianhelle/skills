@@ -401,7 +401,7 @@ azdocli pipelines list
 
 ### `azdocli pipelines runs`
 
-Show all runs (builds) of a pipeline.
+Show a pipeline's runs, including their state, result, and creation date.
 
 | Flag | Required | Description |
 |------|----------|-------------|
@@ -428,18 +428,80 @@ azdocli pipelines show --id 42 --build-id 123
 
 ### `azdocli pipelines run`
 
-Start a new pipeline run.
+Queue a new pipeline run.
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `-i, --id <ID>` | Yes | | Pipeline ID |
+| `-p, --project <NAME>` | No | default | Team project |
+| `-b, --branch <BRANCH>` | No | pipeline default branch | Branch to run the pipeline from |
+| `--variable <NAME=VALUE>` | No | *(none)* | Pipeline variable; repeat for multiple variables |
+
+```bash
+azdocli pipelines run --id 42
+azdocli pipelines run --id 42 --branch develop --variable environment=staging --variable verbose=true
+```
+
+### `azdocli pipelines logs`
+
+List a run's logs or print one log to standard output.
 
 | Flag | Required | Description |
 |------|----------|-------------|
 | `-i, --id <ID>` | Yes | Pipeline ID |
 | `-p, --project <NAME>` | No | Team project |
+| `-b, --build-id <ID>` | Yes | Run (build) ID |
+| `--log-id <ID>` | No | Print this log instead of listing the run's logs |
 
-```
-azdocli pipelines run --id 42
+```bash
+azdocli pipelines logs --id 42 --build-id 123
+azdocli pipelines logs --id 42 --build-id 123 --log-id 7
 ```
 
-> **Note:** This command is registered but returns "not yet fully implemented".
+### `azdocli pipelines artifacts`
+
+List artifacts published by a pipeline run. The output includes artifact download URLs.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-b, --build-id <ID>` | Yes | Run (build) ID |
+| `-p, --project <NAME>` | No | Team project |
+
+```bash
+azdocli pipelines artifacts --build-id 123
+```
+
+### `azdocli pipelines variable-group`
+
+Inspect variable groups in a project.
+
+| Subcommand | Flags | Description |
+|------------|-------|-------------|
+| `list` | `-p, --project <NAME>`, `--name <TEXT>`, `--top <N>` | List groups, optionally filtering by name and limiting results |
+| `show` | `-i, --id <ID>`, `-p, --project <NAME>` | Show a group's variables |
+
+Secret variable values are not returned by Azure DevOps and are displayed as `<secret>`.
+
+```bash
+azdocli pipelines variable-group list
+azdocli pipelines variable-group list --name release --top 10
+azdocli pipelines variable-group show --id 7
+```
+
+### `azdocli pipelines service-connection`
+
+Inspect service connections in a project.
+
+| Subcommand | Flags | Description |
+|------------|-------|-------------|
+| `list` | `-p, --project <NAME>`, `--type <TYPE>` | List connections, optionally filtered by type |
+| `show` | `-i, --id <ID>`, `-p, --project <NAME>` | Show a service connection |
+
+```bash
+azdocli pipelines service-connection list
+azdocli pipelines service-connection list --type azurerm
+azdocli pipelines service-connection show --id 00000000-0000-0000-0000-000000000000
+```
 
 ## Boards (work items)
 
