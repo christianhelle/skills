@@ -93,6 +93,11 @@ azdocli repos pr comment add --repo "$REPO" --id 123 --message "Looks good to me
 azdocli repos pr comment reply --repo "$REPO" --id 123 --thread 7 --message "Fixed"
 azdocli repos pr comment resolve --repo "$REPO" --id 123 --thread 7
 
+# Read, link, or unlink work items on an existing PR
+azdocli repos pr work-item list --repo "$REPO" --id 123
+azdocli repos pr work-item add --repo "$REPO" --id 123 --work-item 42 --work-item 43
+azdocli repos pr work-item remove --repo "$REPO" --id 123 --work-item 42
+
 # Complete, abandon or reactivate
 azdocli repos pr complete --repo "$REPO" --id 123 --merge-strategy squash --delete-source-branch
 azdocli repos pr abandon --repo "$REPO" --id 123 --yes
