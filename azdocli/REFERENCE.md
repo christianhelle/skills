@@ -111,6 +111,73 @@ azdocli repos clone
 azdocli repos clone --target-dir ./repos --yes --parallel --concurrency 8
 ```
 
+### `azdocli repos branches`
+
+List branches in a repository. The default branch is marked in the output.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-i, --id <REPO>` | Yes | Repository name or ID |
+| `-p, --project <NAME>` | No | Team project |
+| `--filter <TEXT>` | No | Only list branches whose names contain this text |
+| `--top <N>` | No | Maximum number of branches to return |
+
+```bash
+azdocli repos branches --id MyRepo
+azdocli repos branches --id MyRepo --filter feature --top 20
+```
+
+### `azdocli repos commits`
+
+List a repository's commit history. The repository's default branch is used unless `--branch` is specified.
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `-i, --id <REPO>` | Yes | | Repository name or ID |
+| `-p, --project <NAME>` | No | default | Team project |
+| `-b, --branch <BRANCH>` | No | default branch | Branch to read history from |
+| `--author <NAME>` | No | *(none)* | Only list commits by this author |
+| `--path <PATH>` | No | *(none)* | Only list commits that touch this path |
+| `--top <N>` | No | `25` | Maximum number of commits to return |
+
+```bash
+azdocli repos commits --id MyRepo
+azdocli repos commits --id MyRepo --branch develop --author "Alex Smith" --path src --top 50
+```
+
+### `azdocli repos files`
+
+List files and folders in a repository without cloning it. The default branch is used unless `--branch` is specified.
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `-i, --id <REPO>` | Yes | | Repository name or ID |
+| `-p, --project <NAME>` | No | default | Team project |
+| `--path <PATH>` | No | `/` | Folder to list |
+| `-b, --branch <BRANCH>` | No | default branch | Branch to read from |
+| `-r, --recursive` | No | `false` | List the whole tree instead of only immediate children |
+
+```bash
+azdocli repos files --id MyRepo
+azdocli repos files --id MyRepo --path /src --branch develop --recursive
+```
+
+### `azdocli repos file`
+
+Print a file's contents to standard output. The default branch is used unless `--branch` is specified.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-i, --id <REPO>` | Yes | Repository name or ID |
+| `-p, --project <NAME>` | No | Team project |
+| `--path <PATH>` | Yes | Path of the file |
+| `-b, --branch <BRANCH>` | No | Branch to read from |
+
+```bash
+azdocli repos file --id MyRepo --path /README.md
+azdocli repos file --id MyRepo --path /src/main.rs --branch develop
+```
+
 ### `azdocli repos pr list`
 
 List pull requests for a repository.

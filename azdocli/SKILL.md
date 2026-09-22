@@ -105,7 +105,7 @@ azdocli repos pr reactivate --repo "$REPO" --id 123
 
 | Group | What you'll commonly run |
 |-------|--------------------------|
-| **repos** | `azdocli repos list` — list repos; `repos show --id <name>` — repo details; `repos clone [--parallel]` — clone all repos |
+| **repos** | `azdocli repos list` — list repos; `repos show --id <name>` — repo details; `repos clone [--parallel]` — clone all repos; browse without cloning with `repos branches`, `repos commits`, `repos files`, and `repos file` |
 | **pipelines** | `azdocli pipelines list` — list pipelines; `pipelines runs --id <n>` — show pipeline runs |
 | **boards work-item** | `azdocli boards work-item list` — my work items; `boards work-item create bug --title "..."` — create bug |
 | **projects** | `azdocli projects list` — list team projects |
