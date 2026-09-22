@@ -278,6 +278,24 @@ Show commits in a pull request.
 azdocli repos pr commits --repo MyRepo --id 123
 ```
 
+### `azdocli repos pr work-item`
+
+List, link, or unlink work items associated with an existing pull request.
+
+| Subcommand | Flags | Description |
+|------------|-------|-------------|
+| `list` | `-r, --repo <NAME>`, `-i, --id <PR_ID>`, `-p, --project <NAME>` | List linked work items with their type, state, and title |
+| `add` | `-r, --repo <NAME>`, `-i, --id <PR_ID>`, `--work-item <ID>` (repeatable or comma-separated), `-p, --project <NAME>` | Link work item(s) |
+| `remove` | `-r, --repo <NAME>`, `-i, --id <PR_ID>`, `--work-item <ID>` (repeatable or comma-separated), `-p, --project <NAME>` | Unlink work item(s) |
+
+Already-linked work items are reported and skipped when using `add`.
+
+```bash
+azdocli repos pr work-item list --repo MyRepo --id 123
+azdocli repos pr work-item add --repo MyRepo --id 123 --work-item 42 --work-item 43
+azdocli repos pr work-item remove --repo MyRepo --id 123 --work-item 42
+```
+
 ### `azdocli repos pr complete`
 
 Merge a pull request.
