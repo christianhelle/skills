@@ -107,7 +107,7 @@ azdocli repos pr reactivate --repo "$REPO" --id 123
 |-------|--------------------------|
 | **repos** | `azdocli repos list` — list repos; `repos show --id <name>` — repo details; `repos clone [--parallel]` — clone all repos; browse without cloning with `repos branches`, `repos commits`, `repos files`, and `repos file` |
 | **pipelines** | `azdocli pipelines list`; queue runs with `pipelines run`; inspect run logs/artifacts; inspect `variable-group` and `service-connection` resources |
-| **boards work-item** | `azdocli boards work-item list` — my work items; `boards work-item create bug --title "..."` — create bug |
+| **boards work-item** | `azdocli boards work-item list`; create child items with `--parent`; run `boards query --wiql <query>`; list types or read/add comments with `work-item types` and `work-item comment` |
 | **projects** | `azdocli projects list` — list team projects |
 
 See [REFERENCE.md](REFERENCE.md) for the full command catalog with all flags and examples.
