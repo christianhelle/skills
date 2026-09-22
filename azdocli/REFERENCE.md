@@ -645,6 +645,44 @@ List all team projects in the organization.
 azdocli projects list
 ```
 
+### `azdocli projects teams`
+
+List teams in a project, optionally limiting results to teams you belong to.
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `-p, --project <NAME>` | No | default | Team project |
+| `--mine` | No | `false` | List only teams you are a member of |
+| `--top <N>` | No | *(none)* | Maximum number of teams to return |
+
+```bash
+azdocli projects teams
+azdocli projects teams --mine --top 10
+```
+
+### `azdocli projects members`
+
+List members of a team. Administrators are marked in the output.
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `-t, --team <NAME_OR_ID>` | Yes | | Team name or ID |
+| `-p, --project <NAME>` | No | default | Team project |
+| `--top <N>` | No | *(none)* | Maximum number of members to return |
+
+```bash
+azdocli projects members --team "MyProject Team"
+azdocli projects members --team "MyProject Team" --project MyProject
+```
+
+### `azdocli projects processes`
+
+List process templates available in the organization. Use the listed names or IDs with `projects create --process`.
+
+```bash
+azdocli projects processes
+```
+
 ### `azdocli projects show`
 
 Show a team project.
