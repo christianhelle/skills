@@ -552,10 +552,12 @@ Create a new work item. Subcommand selects the type.
 |------|----------|-------------|
 | `-t, --title <TITLE>` | Yes | Work item title |
 | `-p, --project <NAME>` | No | Team project |
+| `--parent <ID>` | No | ID of a parent work item |
 
 ```bash
 azdocli boards work-item create bug --title "Fix login issue"
 azdocli boards work-item create user-story --title "Dark mode"
+azdocli boards work-item create task --title "Write integration tests" --parent 1234
 ```
 
 ### `azdocli boards work-item update`
@@ -588,6 +590,49 @@ Delete a work item.
 ```bash
 azdocli boards work-item delete --id 123
 azdocli boards work-item delete --id 123 --soft-delete
+```
+
+### `azdocli boards work-item types`
+
+List the work item types available in a project.
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-p, --project <NAME>` | No | Team project |
+
+```bash
+azdocli boards work-item types
+azdocli boards work-item types --project MyProject
+```
+
+### `azdocli boards work-item comment`
+
+Read or add comments on a work item.
+
+| Subcommand | Flags | Description |
+|------------|-------|-------------|
+| `list` | `-i, --id <ID>`, `-p, --project <NAME>`, `--top <N>` | List comments, optionally limiting the number returned |
+| `add` | `-i, --id <ID>`, `-p, --project <NAME>`, `-m, --message <TEXT>` | Add a comment |
+
+```bash
+azdocli boards work-item comment list --id 123
+azdocli boards work-item comment list --id 123 --top 5
+azdocli boards work-item comment add --id 123 --message "Reproduced on the staging build"
+```
+
+### `azdocli boards query`
+
+Run a WIQL query and list the work items it returns.
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `-w, --wiql <QUERY>` | Yes | | WIQL query |
+| `-p, --project <NAME>` | No | default | Team project |
+| `--limit <N>` | No | `50` | Maximum number of work items to return |
+
+```bash
+azdocli boards query --wiql "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'"
+azdocli boards query --wiql "SELECT [System.Id] FROM WorkItems" --limit 10
 ```
 
 ## Projects
