@@ -422,11 +422,14 @@ Create a new work item. Subcommand selects the type.
 | Flag | Required | Description |
 |------|----------|-------------|
 | `-t, --title <TITLE>` | Yes | Work item title |
+| `--iteration <PATH>` | No | Iteration path (`System.IterationPath`) |
+| `--area <PATH>` | No | Area path (`System.AreaPath`) |
 | `-p, --project <NAME>` | No | Team project |
 
 ```bash
 azdocli boards work-item create bug --title "Fix login issue"
 azdocli boards work-item create user-story --title "Dark mode"
+azdocli boards work-item create task --title "Write tests" --iteration "MyProject\Sprint 1" --area "MyProject\Team A"
 ```
 
 ### `azdocli boards work-item update`
@@ -441,9 +444,12 @@ Update a work item.
 | `--description <DESC>` | No | New description |
 | `--state <STATE>` | No | New state (e.g., `Resolved`, `Closed`) |
 | `--priority <N>` | No | New priority (1-4) |
+| `--iteration <PATH>` | No | New iteration path (`System.IterationPath`) |
+| `--area <PATH>` | No | New area path (`System.AreaPath`) |
 
 ```bash
 azdocli boards work-item update --id 123 --state Active --priority 2
+azdocli boards work-item update --id 123 --iteration "MyProject\Sprint 1" --area "MyProject\Team A"
 ```
 
 ### `azdocli boards work-item delete`
