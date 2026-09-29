@@ -106,6 +106,19 @@ azdocli repos pr reactivate --repo "$REPO" --id 123
 
 > azdocli can create, update, review, discuss, and merge PRs — most edits no longer require the Azure DevOps web UI.
 
+## Work item planning paths
+
+Set iteration and area paths when creating or updating work items:
+
+```bash
+azdocli boards work-item create task --title "Write tests" \
+  --iteration "MyProject\Sprint 1" --area "MyProject\Team A"
+azdocli boards work-item update --id 123 \
+  --iteration "MyProject\Sprint 1" --area "MyProject\Team A"
+```
+
+`--iteration` sets `System.IterationPath`; `--area` sets `System.AreaPath`.
+
 ## Other commands (quick reference)
 
 | Group | What you'll commonly run |
