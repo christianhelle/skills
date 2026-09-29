@@ -593,9 +593,12 @@ Update a work item.
 | `--description <DESC>` | No | New description |
 | `--state <STATE>` | No | New state (e.g., `Resolved`, `Closed`) |
 | `--priority <N>` | No | New priority (1-4) |
+| `--iteration <PATH>` | No | New iteration path (`System.IterationPath`) |
+| `--area <PATH>` | No | New area path (`System.AreaPath`) |
 
 ```bash
 azdocli boards work-item update --id 123 --state Active --priority 2
+azdocli boards work-item update --id 123 --iteration "MyProject\Sprint 1" --area "MyProject\Team A"
 ```
 
 ### `azdocli boards work-item delete`
