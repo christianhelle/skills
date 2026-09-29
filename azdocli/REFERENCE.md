@@ -571,9 +571,12 @@ Create a new work item. Subcommand selects the type.
 | `-t, --title <TITLE>` | Yes | Work item title |
 | `-p, --project <NAME>` | No | Team project |
 | `--parent <ID>` | No | ID of a parent work item |
+| `--iteration <PATH>` | No | Iteration path (`System.IterationPath`), e.g. `MyProject\Sprint 1` |
+| `--area <PATH>` | No | Area path (`System.AreaPath`), e.g. `MyProject\Team A` |
 
 ```bash
 azdocli boards work-item create bug --title "Fix login issue"
+azdocli boards work-item create task --title "Write tests" --iteration "MyProject\Sprint 1" --area "MyProject\Team A"
 azdocli boards work-item create user-story --title "Dark mode"
 azdocli boards work-item create task --title "Write integration tests" --parent 1234
 ```
