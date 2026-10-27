@@ -17,6 +17,8 @@ azdocli login
 azdocli login --profile my-org
 ```
 
+The PAT is never stored in plaintext: `~/.azdocli/credentials.json` and `~/.azdocli/profiles/*.json` hold an encrypted value (`enc:v1:...`) bound to the machine (DPAPI on Windows, AES-256-GCM on macOS/Linux). A copied credentials file does not work on another machine — run `azdocli login` there again. Plaintext credentials from older versions are re-encrypted automatically on next read.
+
 ### `azdocli logout`
 
 Remove stored credentials and config.
@@ -180,21 +182,25 @@ azdocli repos file --id MyRepo --path /src/main.rs --branch develop
 
 ### `azdocli repos pr list`
 
-List pull requests for a repository.
+List pull requests for a repository, or across every repository in the project when `--repo` is omitted. Output includes draft state and creation date.
 
 | Flag | Required | Default | Description |
 |------|----------|---------|-------------|
-| `-r, --repo <NAME>` | Yes | | Repository name |
+| `-r, --repo <NAME>` | No | *(all repos)* | Repository name; omit to list across the whole project |
 | `--status <STATUS>` | No | `active` | `active`, `completed`, `abandoned`, or `all` |
+| `--mine` | No | `false` | PRs you created and PRs assigned to you for review (with your vote), in separate sections — like the web portal's "Mine" tab. Conflicts with `--creator`/`--reviewer` |
 | `--creator <IDENTITY>` | No | *(none)* | Filter by author; email, identity ID, or `@me` |
 | `--reviewer <IDENTITY>` | No | *(none)* | Filter by reviewer; email, identity ID, or `@me` |
-| `--source <BRANCH>` | No | *(none)* | Filter by source branch |
+| `-s, --source <BRANCH>` | No | *(none)* | Filter by source branch |
 | `--target <BRANCH>` | No | *(none)* | Filter by target branch |
-| `--top <N>` | No | *(none)* | Cap the number of results |
+| `--top <N>` | No | `50` for non-active statuses | Cap the number of results (per section with `--mine`) |
 | `-p, --project <NAME>` | No | default | Team project |
 
 ```bash
 azdocli repos pr list --repo MyRepo
+azdocli repos pr list                      # every repository in the project
+azdocli repos pr list --mine
+azdocli repos pr list --mine --status completed --repo MyRepo
 azdocli repos pr list --repo MyRepo --status completed
 azdocli repos pr list --repo MyRepo --creator @me --top 10
 ```
@@ -405,88 +411,142 @@ azdocli repos pr comment resolve --repo MyRepo --id 123 --thread 7 --status wont
 
 ## Pipelines
 
+The `pipelines` commands mirror the official `az pipelines` CLI: same command names and arguments for the read commands and `run`. Commands that change pipelines (`create`, `update`, `delete`, `folder create`, `runs tag add`, `variable-group create`), the `build`, `release`, `pool`, `agent` and `queue` groups, and global `--output`/`--query` are not supported. `--open` also accepts the alias `--web`.
+
+> **Breaking change** — older azdocli versions used a different shape:
+>
+> | Before | Now |
+> |--------|-----|
+> | `pipelines runs --id 42` | `pipelines runs list --pipeline-ids 42` |
+> | `pipelines show --id 42 --build-id 123` | `pipelines runs show --id 123` |
+> | `pipelines logs --id 42 --build-id 123` | `pipelines runs logs --run-id 123` |
+> | `pipelines artifacts --build-id 123` | `pipelines runs artifact list --run-id 123` |
+> | `pipelines run --id 42 --variable a=1 --variable b=2` | `pipelines run --id 42 --variables a=1 b=2` |
+> | `pipelines variable-group list --name x` | `pipelines variable-group list --group-name x` (`--name` still works) |
+>
+> `pipelines show` now shows the pipeline itself, not one of its runs.
+
 ### `azdocli pipelines list`
 
-List all pipelines in a project.
+List pipelines in a project.
 
 | Flag | Required | Description |
 |------|----------|-------------|
 | `-p, --project <NAME>` | No | Team project |
+| `--name <NAME>` | No | Pipeline name; `*` is a wildcard |
+| `--folder-path <PATH>` | No | Only pipelines under this folder |
+| `--top <N>` | No | Max results |
+| `--query-order <ORDER>` | No | `ModifiedAsc`, `ModifiedDesc`, `NameAsc`, `NameDesc`, `None` |
+| `--repository <NAME_OR_ID>` | No | Only pipelines using this repository |
+| `--repository-type <TYPE>` | No | Requires `--repository`; `tfsgit` (default), `git`, `github`, `githubenterprise`, `bitbucket`, `svn`, `tfsversioncontrol` |
 
 ```bash
 azdocli pipelines list
-```
-
-### `azdocli pipelines runs`
-
-Show a pipeline's runs, including their state, result, and creation date.
-
-| Flag | Required | Description |
-|------|----------|-------------|
-| `-i, --id <ID>` | Yes | Pipeline ID (numeric) |
-| `-p, --project <NAME>` | No | Team project |
-
-```bash
-azdocli pipelines runs --id 42
+azdocli pipelines list --name "web*" --folder-path team/web --top 10 --query-order NameAsc
+azdocli pipelines list --repository owner/repo --repository-type github
 ```
 
 ### `azdocli pipelines show`
 
-Show details of a specific pipeline build.
+Show a pipeline by ID or name.
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `-i, --id <ID>` | Yes | Pipeline ID (numeric) |
-| `-b, --build-id <ID>` | Yes | Build ID (numeric) |
+| `-i, --id <ID>` | One of | Pipeline ID |
+| `--name <NAME>` | One of | Pipeline name (ignored if `--id` is given) |
+| `--folder-path <PATH>` | No | Disambiguate pipelines with the same name |
 | `-p, --project <NAME>` | No | Team project |
+| `--open` | No | Open the pipeline in the browser |
 
 ```bash
-azdocli pipelines show --id 42 --build-id 123
+azdocli pipelines show --id 42
+azdocli pipelines show --name web-ci --folder-path team/web
+azdocli pipelines show --id 42 --open
 ```
 
 ### `azdocli pipelines run`
 
-Queue a new pipeline run.
+Queue a pipeline run.
 
 | Flag | Required | Default | Description |
 |------|----------|---------|-------------|
-| `-i, --id <ID>` | Yes | | Pipeline ID |
+| `-i, --id <ID>` | One of | | Pipeline ID |
+| `--name <NAME>` | One of | | Pipeline name (ignored if `--id` is given) |
+| `--folder-path <PATH>` | No | | Disambiguate pipelines with the same name |
 | `-p, --project <NAME>` | No | default | Team project |
-| `-b, --branch <BRANCH>` | No | pipeline default branch | Branch to run the pipeline from |
-| `--variable <NAME=VALUE>` | No | *(none)* | Pipeline variable; repeat for multiple variables |
+| `-b, --branch <BRANCH>` | No | pipeline default | `main`, `refs/heads/main`, or `refs/tags/v1` |
+| `--commit-id <SHA>` | No | | Commit to run on |
+| `--variables <NAME=VALUE>...` | No | | Space-separated variables |
+| `--parameters <NAME=VALUE>...` | No | | Space-separated template parameters |
+| `--open` | No | `false` | Open the new run in the browser |
 
 ```bash
 azdocli pipelines run --id 42
-azdocli pipelines run --id 42 --branch develop --variable environment=staging --variable verbose=true
+azdocli pipelines run --name web-ci --branch develop
+azdocli pipelines run --id 42 --commit-id 1a2b3c4d
+azdocli pipelines run --id 42 --variables environment=staging verbose=true --parameters image=ubuntu-latest
 ```
 
-### `azdocli pipelines logs`
+### `azdocli pipelines runs`
 
-List a run's logs or print one log to standard output.
+Inspect pipeline runs.
+
+| Subcommand | Flags | Description |
+|------------|-------|-------------|
+| `list` | `-p, --project`, `--pipeline-ids <ID>...`, `--branch`, `--top <N>`, `--query-order`, `--reason`, `--result`, `--status`, `--requested-for <USER>`, `--tags <TAG>...` | List runs of the project or of specific pipelines. Without `--top` only the first page is shown (with a note when more exist) |
+| `show` | `-i, --id <RUN_ID>`, `-p, --project`, `--open` | Show a run |
+| `artifact list` | `--run-id <ID>`, `-p, --project` | List a run's artifacts (with download URLs) |
+| `tag list` | `--run-id <ID>`, `-p, --project` | List a run's tags |
+| `logs` | `--run-id <ID>`, `-p, --project`, `--log-id <ID>` | List a run's logs, or print one log to stdout (not part of `az pipelines`) |
+
+Filter values:
+
+- `--query-order`: `FinishTimeAsc`, `FinishTimeDesc`, `QueueTimeAsc`, `QueueTimeDesc`, `StartTimeAsc`, `StartTimeDesc`
+- `--reason`: `all`, `batchedCI`, `buildCompletion`, `checkInShelveset`, `individualCI`, `manual`, `pullRequest`, `schedule`, `triggered`, `userCreated`, `validateShelveset`
+- `--result`: `canceled`, `failed`, `none`, `partiallySucceeded`, `succeeded`
+- `--status`: `all`, `cancelling`, `completed`, `inProgress`, `none`, `notStarted`, `postponed`
+
+```bash
+azdocli pipelines runs list
+azdocli pipelines runs list --pipeline-ids 42 43 --top 10
+azdocli pipelines runs list --branch main --result failed --query-order QueueTimeDesc
+azdocli pipelines runs list --status inProgress --reason pullRequest
+azdocli pipelines runs list --requested-for "someone@example.com" --tags nightly release
+azdocli pipelines runs show --id 123 --open
+azdocli pipelines runs artifact list --run-id 123
+azdocli pipelines runs tag list --run-id 123
+azdocli pipelines runs logs --run-id 123
+azdocli pipelines runs logs --run-id 123 --log-id 7
+```
+
+### `azdocli pipelines folder list`
+
+List the folders pipelines are organized in.
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `-i, --id <ID>` | Yes | Pipeline ID |
 | `-p, --project <NAME>` | No | Team project |
-| `-b, --build-id <ID>` | Yes | Run (build) ID |
-| `--log-id <ID>` | No | Print this log instead of listing the run's logs |
+| `--path <PATH>` | No | Folder to list, along with folders under it |
+| `--query-order <ORDER>` | No | `Asc`, `Desc`, `None` |
 
 ```bash
-azdocli pipelines logs --id 42 --build-id 123
-azdocli pipelines logs --id 42 --build-id 123 --log-id 7
+azdocli pipelines folder list
+azdocli pipelines folder list --path team --query-order Asc
 ```
 
-### `azdocli pipelines artifacts`
+### `azdocli pipelines variable list`
 
-List artifacts published by a pipeline run. The output includes artifact download URLs.
+List the variables defined on a pipeline in Azure DevOps (the pipeline editor's Variables button). Variables declared in YAML are not included; secret values are never returned.
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `-b, --build-id <ID>` | Yes | Run (build) ID |
+| `--pipeline-id <ID>` | One of | Pipeline ID |
+| `--pipeline-name <NAME>` | One of | Pipeline name (ignored if `--pipeline-id` is given) |
 | `-p, --project <NAME>` | No | Team project |
 
 ```bash
-azdocli pipelines artifacts --build-id 123
+azdocli pipelines variable list --pipeline-id 42
+azdocli pipelines variable list --pipeline-name web-ci
 ```
 
 ### `azdocli pipelines variable-group`
@@ -495,15 +555,17 @@ Inspect variable groups in a project.
 
 | Subcommand | Flags | Description |
 |------------|-------|-------------|
-| `list` | `-p, --project <NAME>`, `--name <TEXT>`, `--top <N>` | List groups, optionally filtering by name and limiting results |
-| `show` | `-i, --id <ID>`, `-p, --project <NAME>` | Show a group's variables |
+| `list` | `-p, --project`, `--group-name <TEXT>` (alias `--name`), `--top <N>`, `--query-order <Asc\|Desc>`, `--action <manage\|none\|use>` | List groups. `--group-name` matches as a substring, or as a pattern when it contains `*` |
+| `show` | `-i, --group-id <ID>` (alias `--id`), `-p, --project` | Show a group's variables; unknown IDs are reported as not found |
 
 Secret variable values are not returned by Azure DevOps and are displayed as `<secret>`.
 
 ```bash
 azdocli pipelines variable-group list
-azdocli pipelines variable-group list --name release --top 10
-azdocli pipelines variable-group show --id 7
+azdocli pipelines variable-group list --group-name release --query-order Asc --top 10
+azdocli pipelines variable-group list --group-name "release-*"
+azdocli pipelines variable-group list --action use
+azdocli pipelines variable-group show --group-id 7
 ```
 
 ### `azdocli pipelines service-connection`
@@ -521,21 +583,77 @@ azdocli pipelines service-connection list --type azurerm
 azdocli pipelines service-connection show --id 00000000-0000-0000-0000-000000000000
 ```
 
+## Releases (classic)
+
+Work with classic release pipelines — mainly to create a release that deploys a *specific* build rather than the latest one.
+
+| Subcommand | Flags | Description |
+|------------|-------|-------------|
+| `definitions` | `--name <TEXT>`, `-p, --project` | List release definitions (name substring filter) |
+| `list` | `-d, --definition-id <ID>`, `--top <N>`, `-p, --project` | List releases, optionally for one definition |
+| `show` | `-i, --id <ID>`, `-p, --project` | Show a release and the status of each stage |
+| `create` | `-d, --definition-id <ID>` (required), `-b, --build-id <ID>` (required), `-a, --artifact-alias <ALIAS>`, `--description <TEXT>`, `-p, --project` | Create a release of a build. The build is pinned to the definition's primary build artifact, or to `--artifact-alias` when the definition links several builds |
+
+An unknown alias, or a definition without a primary build artifact, reports the aliases you can choose from.
+
+```bash
+azdocli releases definitions --name web
+azdocli pipelines runs list --pipeline-ids 42          # find the build to release
+azdocli releases create --definition-id 5 --build-id 1234
+azdocli releases create --definition-id 5 --build-id 1234 --artifact-alias _web-ci --description "Hotfix for #321"
+azdocli releases list --definition-id 5 --top 10
+azdocli releases show --id 87
+```
+
+## Artifacts
+
+Browse Azure Artifacts feeds and transfer Universal Packages (mirrors `az artifacts universal`).
+
+Every `artifacts` command takes the feed scope flags:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--scope <organization\|project>` | `organization` | Where the feed lives; `--scope project` alone uses the default project |
+| `-p, --project <NAME>` | | Project of a project-scoped feed (implies `--scope project`) |
+
+| Command | Flags | Description |
+|---------|-------|-------------|
+| `feeds list` | scope flags | List feeds in the organization, or only those of a project |
+| `packages list` | `--feed <NAME_OR_ID>` (required), `--protocol <upack\|nuget\|npm\|maven\|pypi\|cargo>`, `--name <TEXT>` | List a feed's packages |
+| `packages versions` | `--feed` (required), `-n, --name <PACKAGE>` (required), `--protocol` | List a package's versions; `--protocol` disambiguates same-named packages |
+| `universal download` | `--feed`, `-n, --name`, `-v, --version`, `--path <DIR>` (all required), `--file-filter <GLOB>` | Download a Universal Package natively (no extra tools). Paths escaping `--path` are refused |
+| `universal publish` | `--feed`, `-n, --name`, `-v, --version`, `--path <DIR>` (all required), `-d, --description` | Publish a directory via Microsoft's ArtifactTool (downloaded on first use, cached in `~/.azdocli/tools/ArtifactTool/<version>`) |
+
+Universal Packages require Azure DevOps Services (`https://dev.azure.com`); they are not available on Azure DevOps Server.
+
+```bash
+azdocli artifacts feeds list
+azdocli artifacts feeds list --project MyProject
+azdocli artifacts packages list --feed tools --protocol upack --name cli
+azdocli artifacts packages versions --feed tools --name cli
+azdocli artifacts universal download --feed tools --name cli --version 1.2.3 --path ./cli --file-filter "*.dll"
+azdocli artifacts universal publish --feed tools --name cli --version 1.2.4 --path ./dist --description "CLI tools"
+```
+
 ## Boards (work items)
 
 ### `azdocli boards work-item list`
 
-List work items assigned to the current user.
+List work items assigned to the current user (default), to someone else, or to anyone.
 
 | Flag | Required | Default | Description |
 |------|----------|---------|-------------|
 | `-p, --project <NAME>` | No | default | Team project |
+| `--assigned-to <PERSON>` | No | `@me` | Display name or email; conflicts with `--all` |
+| `--all` | No | `false` | All work items in the project, whoever they are assigned to |
 | `--state <STATE>` | No | all | Filter by state (e.g., `Active`) |
 | `--work-item-type <TYPE>` | No | all | Filter by type (e.g., `Bug`, `Task`) |
 | `--limit <N>` | No | `50` | Max results |
 
 ```bash
 azdocli boards work-item list
+azdocli boards work-item list --assigned-to "jane@contoso.com"
+azdocli boards work-item list --all --state Active
 azdocli boards work-item list --state Active --work-item-type Bug --limit 20
 ```
 
@@ -657,6 +775,72 @@ Run a WIQL query and list the work items it returns.
 ```bash
 azdocli boards query --wiql "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'"
 azdocli boards query --wiql "SELECT [System.Id] FROM WorkItems" --limit 10
+```
+
+### `azdocli boards area`
+
+Manage a project's area paths and the areas each team owns. `--path` accepts the absolute form (`\MyProject\Area\Team A`), the work-item form (`MyProject\Team A`), or a path relative to the project root (`Team A`). All commands take `-p, --project`.
+
+| Command | Flags | Description |
+|---------|-------|-------------|
+| `project list` | `--path`, `--depth <N>` (default `1`) | Show the area tree |
+| `project show` | `--path` (required) | Show an area |
+| `project create` | `--name` (required), `--path <PARENT>` | Create an area (under the root by default) |
+| `project update` | `--path` (required), `--name <NEW>`, `--child-id <ID>` | Rename an area and/or move area `<ID>` (with children) under it; at least one of `--name`/`--child-id` |
+| `project delete` | `--path` (required), `--reclassify-id <ID>` | Delete an area, moving its work items to area `<ID>` |
+| `team list` | `--team` (required) | List the areas a team owns |
+| `team add` | `--team`, `--path` (required), `--include-sub-areas [true\|false]`, `--set-as-default` | Give a team an area |
+| `team update` | `--team`, `--path` (required), `--include-sub-areas [true\|false]`, `--set-as-default` | Change sub-area inclusion or make it the default; at least one change |
+| `team remove` | `--team`, `--path` (required) | Take an area away from a team |
+
+Adding an area a team already owns, or removing a team's default area, is refused.
+
+```bash
+azdocli boards area project list --depth 3
+azdocli boards area project show --path "\MyProject\Area\Team A"
+azdocli boards area project create --name "Backend" --path "MyProject\Team A"
+azdocli boards area project update --path "MyProject\Team A\Backend" --name "Services"
+azdocli boards area project update --path "MyProject\Team A" --child-id 15
+azdocli boards area project delete --path "MyProject\Team A\Services" --reclassify-id 12
+azdocli boards area team list --team "Team A"
+azdocli boards area team add --team "Team A" --path "MyProject\Team A" --include-sub-areas --set-as-default
+azdocli boards area team update --team "Team A" --path "MyProject\Team A" --include-sub-areas false
+azdocli boards area team remove --team "Team A" --path "MyProject\Shared"
+```
+
+### `azdocli boards iteration`
+
+Manage a project's iterations and the iterations each team works in. Paths follow the same rules as areas. Team commands that pick an iteration take either `--id <GUID>` or `--path`. All commands take `-p, --project`.
+
+| Command | Flags | Description |
+|---------|-------|-------------|
+| `project list` | `--path`, `--depth <N>` (default `1`) | Show the iteration tree |
+| `project show` | `--path` (required) | Show an iteration |
+| `project create` | `--name` (required), `--path <PARENT>`, `--start-date`, `--finish-date` | Create an iteration; dates (`YYYY-MM-DD`) must be given together |
+| `project update` | `--path` (required), `--name`, `--child-id <ID>`, `--start-date` + `--finish-date` | Rename, reschedule, or move iteration `<ID>` under it; at least one change |
+| `project delete` | `--path` (required), `--reclassify-id <ID>` | Delete an iteration, moving its work items to `<ID>` |
+| `team list` | `--team` (required), `--timeframe current` | List a team's iterations |
+| `team add` | `--team`, `--id` or `--path` | Add an iteration to a team |
+| `team remove` | `--team`, `--id` or `--path` | Remove an iteration from a team |
+| `team list-work-items` | `--team`, `--id` or `--path` | List the work items in a team iteration |
+| `team show-default-iteration` | `--team` | Show where new work items go |
+| `team set-default-iteration` | `--team`, one of `--id`, `--path`, `--default-iteration-macro <MACRO>` | Set where new work items go (e.g. `@CurrentIteration`) |
+| `team show-backlog-iteration` | `--team` | Show the team's backlog iteration |
+| `team set-backlog-iteration` | `--team`, `--id` or `--path` | Set the team's backlog iteration |
+
+```bash
+azdocli boards iteration project list --depth 2
+azdocli boards iteration project create --name "Sprint 1" --start-date 2026-06-01 --finish-date 2026-06-14
+azdocli boards iteration project update --path "MyProject\Sprint 1" --start-date 2026-06-02 --finish-date 2026-06-15
+azdocli boards iteration project update --path "MyProject\Sprint 1" --name "Sprint 01"
+azdocli boards iteration project show --path "\MyProject\Iteration\Sprint 01"
+azdocli boards iteration project delete --path "MyProject\Sprint 01"
+azdocli boards iteration team list --team "Team A" --timeframe current
+azdocli boards iteration team add --team "Team A" --path "MyProject\Sprint 1"
+azdocli boards iteration team remove --team "Team A" --id 5a8e3c5e-8d61-4b0f-b5c4-1b9a6a9c5e3e
+azdocli boards iteration team list-work-items --team "Team A" --path "MyProject\Sprint 1"
+azdocli boards iteration team set-default-iteration --team "Team A" --default-iteration-macro @CurrentIteration
+azdocli boards iteration team set-backlog-iteration --team "Team A" --path "MyProject"
 ```
 
 ## Projects
