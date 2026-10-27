@@ -1,6 +1,6 @@
 ---
 name: azdocli
-description: Interact with Azure DevOps via azdocli for repository browsing, PRs and linked work items, pipelines and pipeline libraries, work items, projects, teams, and processes. Use when managing repositories, queueing or inspecting pipelines, querying or commenting on work items, discovering teams or process templates, or creating pull requests.
+description: Interact with Azure DevOps via azdocli for repository browsing, PRs and linked work items, pipelines and runs, classic releases, Azure Artifacts feeds and Universal Packages, work items, area and iteration paths, projects, teams, and processes. Use when managing repositories, listing my pull requests, queueing or inspecting pipeline runs, releasing a specific build, downloading or publishing Universal Packages, querying or commenting on work items, managing sprints/iterations or area paths, discovering teams or process templates, or creating pull requests.
 ---
 
 # azdocli
@@ -25,7 +25,7 @@ Verify installation with `azdocli --version`.
 ### Login & config
 
 ```bash
-# Login (interactive — prompts for org + PAT)
+# Login (interactive — prompts for org + PAT; the PAT is stored encrypted and machine-bound)
 azdocli login
 
 # Set a default project so --project is optional on all commands
@@ -66,8 +66,13 @@ azdocli repos pr create \
 ### PR lifecycle (view & update)
 
 ```bash
-# List PRs in a repo
+# List PRs in a repo, or across the whole project when --repo is omitted
 azdocli repos pr list --repo "$REPO"
+azdocli repos pr list
+
+# My PRs (created by me + assigned to me for review), like the web "Mine" tab
+azdocli repos pr list --mine
+azdocli repos pr list --mine --status completed
 
 # Show PR details
 azdocli repos pr show --repo "$REPO" --id 123
@@ -119,13 +124,66 @@ azdocli boards work-item update --id 123 \
 
 `--iteration` sets `System.IterationPath`; `--area` sets `System.AreaPath`.
 
+Manage the paths themselves, and which ones a team uses, with `boards area` and `boards iteration`:
+
+```bash
+# Project-level trees
+azdocli boards iteration project list --depth 2
+azdocli boards iteration project create --name "Sprint 1" --start-date 2026-06-01 --finish-date 2026-06-14
+azdocli boards area project create --name "Backend" --path "MyProject\Team A"
+
+# Team-level assignments
+azdocli boards iteration team list --team "Team A" --timeframe current
+azdocli boards iteration team add --team "Team A" --path "MyProject\Sprint 1"
+azdocli boards iteration team list-work-items --team "Team A" --path "MyProject\Sprint 1"
+azdocli boards area team add --team "Team A" --path "MyProject\Team A" --include-sub-areas
+```
+
+`--path` accepts `\MyProject\Area\Team A`, `MyProject\Team A`, or a path relative to the project root.
+
+## Pipelines (az pipelines–compatible)
+
+`pipelines` commands use the same names and arguments as `az pipelines`. Run-level commands live under `pipelines runs`:
+
+```bash
+azdocli pipelines list --name "web*"
+azdocli pipelines show --name web-ci
+azdocli pipelines run --name web-ci --branch develop --variables env=staging --parameters image=ubuntu-latest
+azdocli pipelines runs list --pipeline-ids 42 --result failed --top 10
+azdocli pipelines runs show --id 123
+azdocli pipelines runs logs --run-id 123 --log-id 7
+azdocli pipelines runs artifact list --run-id 123
+```
+
+> Older forms (`pipelines runs --id`, `pipelines show --build-id`, `pipelines logs`, `pipelines artifacts`, `--variable a=1`) no longer work — see the mapping table in [REFERENCE.md](REFERENCE.md#pipelines).
+
+## Releases & Artifacts
+
+```bash
+# Create a classic release of a specific build
+azdocli releases definitions --name web
+azdocli releases create --definition-id 5 --build-id 1234
+azdocli releases show --id 87
+
+# Azure Artifacts: feeds, packages, Universal Packages
+azdocli artifacts feeds list
+azdocli artifacts packages versions --feed tools --name cli
+azdocli artifacts universal download --feed tools --name cli --version 1.2.3 --path ./cli
+azdocli artifacts universal publish --feed tools --name cli --version 1.2.4 --path ./dist
+```
+
+Feeds are organization-scoped by default; pass `--project` (or `--scope project`) for a project feed.
+
 ## Other commands (quick reference)
 
 | Group | What you'll commonly run |
 |-------|--------------------------|
 | **repos** | `azdocli repos list` — list repos; `repos show --id <name>` — repo details; `repos clone [--parallel]` — clone all repos; browse without cloning with `repos branches`, `repos commits`, `repos files`, and `repos file` |
-| **pipelines** | `azdocli pipelines list`; queue runs with `pipelines run`; inspect run logs/artifacts; inspect `variable-group` and `service-connection` resources |
-| **boards work-item** | `azdocli boards work-item list`; create child items with `--parent`; set `--iteration` and `--area` paths on create or update; run `boards query --wiql <query>`; list types or read/add comments with `work-item types` and `work-item comment` |
+| **pipelines** | `pipelines list/show/run` by ID or name; `pipelines runs list/show/logs`, `runs artifact list`, `runs tag list`; `folder list`; `variable list`; inspect `variable-group` and `service-connection` resources |
+| **releases** | `releases definitions`, `list`, `show`, and `create --definition-id <id> --build-id <id>` for classic release pipelines |
+| **artifacts** | `artifacts feeds list`; `packages list/versions`; `universal download/publish` |
+| **boards work-item** | `azdocli boards work-item list` (mine by default; `--assigned-to <who>` or `--all`); create child items with `--parent`; set `--iteration` and `--area` paths on create or update; run `boards query --wiql <query>`; list types or read/add comments with `work-item types` and `work-item comment` |
+| **boards area / iteration** | `boards area project ...`/`boards area team ...` and `boards iteration project ...`/`boards iteration team ...` to manage paths, team assignments, and default/backlog iterations |
 | **projects** | `azdocli projects list`; discover teams with `projects teams`, members with `projects members --team <team>`, and templates with `projects processes` |
 
 See [REFERENCE.md](REFERENCE.md) for the full command catalog with all flags and examples.
