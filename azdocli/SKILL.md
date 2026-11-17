@@ -20,7 +20,9 @@ If `azdocli` is not installed, use the platform-appropriate one-liner:
 | Cargo (any) | `cargo install azdocli` |
 | Linux (Snap) | `snap install azdocli` |
 
-Verify installation with `azdocli --version`.
+Verify installation with `azdocli --version`. Update with `azdocli check-update` / `azdocli update`; disable the daily update notice with `--no-update-check`.
+
+Add `-o json|yaml|markdown` to supported commands (e.g. `repos list`, `repos pr list`, `boards query`) for pipe-friendly output.
 
 ### Login & config
 
