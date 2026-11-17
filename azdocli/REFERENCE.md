@@ -25,6 +25,24 @@ Enterprise/on-prem: at the org prompt enter the server URL (e.g. `https://devops
 
 Remove stored credentials and config.
 
+### Global options
+
+| Option | Description |
+|--------|-------------|
+| `-o, --output <FMT>` | `text` (default), `json`, `yaml`, `markdown`. Before or after the subcommand. Non-text formats omit progress messages so output can be piped; errors still go to stderr |
+| `--no-update-check` | Disable the daily update notice (or set env `AZDOCLI_NO_UPDATE_CHECK`) |
+
+Non-text formats are supported by: `repos list/show`, `repos pr list/show`, `pipelines list/show`, `pipelines runs list`, `boards work-item list/show`, `boards query`. Other commands accept only `text`.
+
+```bash
+azdocli repos list -o json | jq -r '.[].name'
+azdocli repos pr list --output markdown
+```
+
+### `azdocli check-update` / `azdocli update`
+
+Check for a newer release, or download it (SHA-256 verified) and replace the running binary. Installs from Cargo, Snap, Homebrew or Chocolatey must update via that package manager.
+
 ```bash
 azdocli logout
 ```
