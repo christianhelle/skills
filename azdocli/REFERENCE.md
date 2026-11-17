@@ -10,7 +10,7 @@ Login to Azure DevOps with a Personal Access Token (PAT). Interactive prompts fo
 
 | Flag | Description |
 |------|-------------|
-| `--profile <NAME>` | Named credential profile (for `migrate`). Omit to use default store. |
+| `--profile <NAME>` | Named credential profile (for `migrate`, or to keep cloud and on-prem logins side by side). Omit to use default store. |
 
 ```bash
 azdocli login
@@ -18,6 +18,8 @@ azdocli login --profile my-org
 ```
 
 The PAT is never stored in plaintext: `~/.azdocli/credentials.json` and `~/.azdocli/profiles/*.json` hold an encrypted value (`enc:v1:...`) bound to the machine (DPAPI on Windows, AES-256-GCM on macOS/Linux). A copied credentials file does not work on another machine — run `azdocli login` there again. Plaintext credentials from older versions are re-encrypted automatically on next read.
+
+Enterprise/on-prem: at the org prompt enter the server URL (e.g. `https://devops.mycompany.com` or `https://tfs.mycompany.com/tfs/DefaultCollection`); the last path segment is treated as the collection. `user` commands only work on the default cloud host.
 
 ### `azdocli logout`
 
