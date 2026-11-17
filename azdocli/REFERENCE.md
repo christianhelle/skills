@@ -411,7 +411,7 @@ azdocli repos pr comment resolve --repo MyRepo --id 123 --thread 7 --status wont
 
 ## Pipelines
 
-The `pipelines` commands mirror the official `az pipelines` CLI: same command names and arguments for the read commands and `run`. Commands that change pipelines (`create`, `update`, `delete`, `folder create`, `runs tag add`, `variable-group create`), the `build`, `release`, `pool`, `agent` and `queue` groups, and global `--output`/`--query` are not supported. `--open` also accepts the alias `--web`.
+The `pipelines` commands mirror the official `az pipelines` CLI: same command names and arguments for the read commands and `run`. Commands that change pipelines (`create`, `update`, `delete`, `folder create`, `runs tag add`, `variable-group create`), the `build`, `release`, `pool`, `agent` and `queue` groups, and the `az`-style global `--query` are not supported. `-o/--output` is supported by `pipelines list`, `pipelines show` and `pipelines runs list` (see [Global options](#global-options)). `--open` also accepts the alias `--web`.
 
 > **Breaking change** — older azdocli versions used a different shape:
 >
