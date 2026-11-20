@@ -12,6 +12,7 @@ Skills are directories containing a `SKILL.md` file that instructs an agent on d
 | [karpathy](./karpathy) | Behavioral guidelines to reduce common LLM coding mistakes — think before coding, simplicity first, surgical changes, goal-driven execution |
 | [nano-commits](./nano-commits) | Autonomous nano-commit workflow — slice work into the smallest independently-testable logical groups |
 | [tdd](./tdd) | Test-driven development — red-green-refactor loop, seam selection, and anti-pattern avoidance |
+| [tigerstyle](./tigerstyle) | Apply TigerStyle principles to software design, implementation, refactoring, and review |
 | [worktree-isolation](./worktree-isolation) | Do work in an isolated git worktree, leaving the main checkout untouched |
 
 ## Installation
